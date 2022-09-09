@@ -30,15 +30,25 @@ async function mine() {
 	await arweave.api.get('mine');
 }
 
-export async function tests(): boolean {
+const defaultLogger = { log: (s) => true };
+
+export async function tests(serverUrl?: string, logger?: object = defaultLogger): boolean {
 	let post, wallet, rootCID;
+
+	// destructure serverUrl up into host, port, protocol
+	let { host, port, protocol } = new URL(serverUrl);
+	// remove colon and port from host
+	host = host.replace(`:${port}`, '') || 'localhost';
+	port = port || 443;
+	protocol = protocol.replace(':', '');
+	logger.log({ host, port, protocol });
 
 	if (dev) {
 		// Save this buffer as an Arweave Contract Transaction
 		arweave = Arweave.init({
-			host: 'localhost',
-			port: 1984,
-			protocol: 'http',
+			host,
+			port,
+			protocol,
 			timeout: 20000,
 			logging: false
 		});
@@ -53,7 +63,7 @@ export async function tests(): boolean {
 		post = async (tx) => {
 			const resp = await p(tx);
 			await mine();
-			console.log('Mined', tx.id);
+			logger.log(`Mined ${tx.id}`);
 			return resp;
 		};
 	} else {
@@ -113,7 +123,7 @@ export async function tests(): boolean {
 		// Create, Sign, Post
 		const tx = await ardag.createTx(contractId, { function: 'ArDagTx', ardagtxid });
 		await arweave.transactions.sign(tx, wallet.jwk);
-		console.log('Contract Updated with', ardagtxid);
+		logger.log(`Contract Updated with ${ardagtxid}`);
 		await post(tx);
 	}
 
@@ -137,13 +147,13 @@ export async function tests(): boolean {
 		const data = await arweave.transactions.getData(txid);
 		const buffer = new Uint8Array(decodeURLSafe(data));
 		const r = await rebuiltDag.importBuffer(buffer); // as many as you need
-		console.log(`Loaded from Arweave ${r.toString()}`);
+		logger.log(`Loaded from Arweave ${r.toString()}`);
 	}
 
 	const rebuiltCurrent = (await rebuiltDag.get(rootCID, { path: `/${key}/current/number` })).value;
-	console.log(rebuiltCurrent, v2.number == rebuiltCurrent);
+	logger.log(rebuiltCurrent, v2.number == rebuiltCurrent);
 	const rebuiltPrev = (await rebuiltDag.get(rootCID, { path: `/${key}/prev/number` })).value;
-	console.log(rebuiltPrev, v1.number == rebuiltPrev);
+	logger.log(rebuiltPrev, v1.number == rebuiltPrev);
 
-	return v1.number == rebuiltPrev && v2.number == rebuiltCurrent;
+	return `Pass tests? ${v1.number == rebuiltPrev && v2.number == rebuiltCurrent}`;
 }
