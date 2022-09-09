@@ -67,7 +67,6 @@ export async function getInstance({
 	source?: string;
 }): Promise<string> {
 	// make some reasonable defaults for people
-	console.log({ wallet });
 	state.owner = options?.owner || (await this.getAddress(wallet));
 	if (!state.owner) throw new Error('Contract must be owned by the Base64 JWK of a wallet');
 	if (!dag) dag = await createDagRepo();
