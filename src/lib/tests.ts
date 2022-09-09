@@ -1,5 +1,5 @@
-import { create as createArDag } from '@douganderson444/ardag'; // this library
-import { createDagRepo, encode } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
+import * as ArDag from '@douganderson444/ardag'; // this library
+import { createDagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
 import Arweave from 'arweave';
 import ArDB from 'ardb'; // access Arweave like a Database
 import { encodeURLSafe, decodeURLSafe } from '@stablelib/base64';
@@ -74,66 +74,24 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	}
 
 	const ardb = new ArDB(arweave);
+	const dag = await createDagRepo(); // make a barebones dag repo for fast loading
 
-	// create 2 dag transactions
-	let dag = await createDagRepo(); // make a barebones dag repo for fast loading
-
-	let key = 'Mobile';
+	let tag = 'Mobile';
 	let v1 = { number: '555-1234' };
 	let v2 = { number: '+1-555-555-1234' };
 
-	async function aceTap(tag: string, obj: object) {
-		// Add, commit, encode, Tag and Post
-		// TX1
-		rootCID = await dag.tx.add(tag, obj);
-		const savedBuffer = await dag.tx.commit();
-		const { cid: carCid } = await encode(savedBuffer);
-
-		// create an Arweave data transaction
-		let tx = await arweave.createTransaction({ data: savedBuffer });
-
-		const tags = [
-			{ name: 'Root-CID', value: [rootCID.toString()] },
-			{ name: 'CAR-CID', value: [carCid.toString()] }
-		];
-
-		if (tags && tags.length) {
-			for (const tag of tags) {
-				tx.addTag(tag.name.toString(), tag.value.toString());
-			}
-		}
-		// post it to Arweave
-		await arweave.transactions.sign(tx, wallet.jwk);
-		await post(tx);
-		return tx.id;
-	}
-
-	let txId1 = await aceTap(key, v1);
-	let txId2 = await aceTap(key, v2);
-
-	/**
-	 * Now that you have 2 transactions, save their TxIds to SmArTweave contract via ArDagTxs
-	 */
-	const ardag = createArDag({ arweave, post });
+	const ardag = ArDag.init({ arweave, post });
 
 	// create a contract if you don't have one
-	const contractId = await ardag.createNewArDag(wallet.jwk); // uses wallet if no jwk specified
-
-	async function crisp(contractId: string, ardagtxid: string) {
-		// Create, Sign, Post
-		const tx = await ardag.createTx(contractId, { function: 'ArDagTx', ardagtxid });
-		await arweave.transactions.sign(tx, wallet.jwk);
-		logger.log(`Contract Updated with ${ardagtxid}`);
-		await post(tx);
-	}
-
-	await crisp(contractId, txId1);
-	await crisp(contractId, txId2);
+	// const contractId = await ardag.generateContract(wallet.jwk); // uses wallet if no jwk specified
+	const myArDag = await ardag.getInstance({ wallet: wallet.jwk, dag }); // has contractId and wallet properties
+	rootCID = await myArDag.save(tag, v1);
+	rootCID = await myArDag.save(tag, v2);
 
 	// load buffer from Contract transactions
 	const searchTags = [
 		{ name: 'App-Name', values: ['SmartWeaveAction'] },
-		{ name: 'Contract', values: [contractId] }
+		{ name: 'Contract', values: [myArDag.contractId] }
 	];
 
 	const txs = await ardb.search('transactions').tags(searchTags).findAll();
@@ -150,9 +108,9 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 		logger.log(`Loaded from Arweave ${r.toString()}`);
 	}
 
-	const rebuiltCurrent = (await rebuiltDag.get(rootCID, { path: `/${key}/current/number` })).value;
+	const rebuiltCurrent = (await rebuiltDag.get(rootCID, { path: `/${tag}/current/number` })).value;
 	logger.log(rebuiltCurrent, v2.number == rebuiltCurrent);
-	const rebuiltPrev = (await rebuiltDag.get(rootCID, { path: `/${key}/prev/number` })).value;
+	const rebuiltPrev = (await rebuiltDag.get(rootCID, { path: `/${tag}/prev/number` })).value;
 	logger.log(rebuiltPrev, v1.number == rebuiltPrev);
 
 	return `Pass tests? ${v1.number == rebuiltPrev && v2.number == rebuiltCurrent}`;

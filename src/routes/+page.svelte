@@ -13,7 +13,7 @@
 	async function handleRun(e: Event) {
 		if (!tests) return;
 		if (!serverUrl) {
-			error = 'Please enter an Arweave server URL to use (localhost:1984 perhaps?)';
+			error = 'Please enter an Arweave Gateway URL to use (localhost:1984 perhaps?)';
 			return;
 		}
 		error = null;
@@ -32,10 +32,9 @@
 	}
 </script>
 
-Arweave Server URL: <input bind:value={serverUrl} placeholder="http://localhost:1984" />
-{serverUrl ? serverUrl : 'No server URL entered'}
-
-<button on:click={handleRun} disabled={!serverUrl}>Run Tests</button>
+<br />Arweave Gateway URL: <input bind:value={serverUrl} placeholder="http://localhost:1984" />
+<br />{serverUrl ? serverUrl : 'No server URL entered'}
+<br /><button on:click={handleRun} disabled={!serverUrl}>Run Tests</button>
 
 {#if error}
 	<p style="color:red">{error}</p>
