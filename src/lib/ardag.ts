@@ -12,7 +12,7 @@ export async function createTx(
 	// wallet: JWKInterface | 'use_wallet',
 	contractId: string,
 	input: any,
-	tags?: { name: string; value: string }[],
+	tags?: { name: string; value: string }[] = [],
 	target?: string = '',
 	winstonQty?: string = '0',
 	reward?: string
@@ -93,8 +93,6 @@ export async function deploy({
 		JSON.stringify(state)
 	); // Legacy
 
-	console.log({ contractTxId });
-
 	return contractTxId;
 }
 
@@ -124,7 +122,7 @@ export async function createContract(
 
 	await arweave.transactions.sign(srcTx, wallet);
 
-	const response = await arweave.transactions.post(srcTx);
+	const response = await this.post(srcTx);
 	// const response = await this.post(srcTx);
 
 	if (response.status === 200 || response.status === 208) {
@@ -148,7 +146,7 @@ export async function createContract(
  * @param target        if needed to send AR to an address, this is the target.
  * @param winstonQty    amount of winston to send to the target, if needed.
  */
-export const createContractFromTx = async (
+export async function createContractFromTx(
 	arweave: Arweave,
 	wallet: JWKInterface | 'use_wallet',
 	srcTxId: string,
@@ -157,7 +155,7 @@ export const createContractFromTx = async (
 	target: string = '',
 	winstonQty: string = '',
 	reward?: string
-): Promise<string> => {
+): Promise<string> {
 	let contractTX = await arweave.createTransaction({ data: state, reward }, wallet);
 
 	if (target && winstonQty && target.length && +winstonQty > 0) {
@@ -184,7 +182,7 @@ export const createContractFromTx = async (
 
 	await arweave.transactions.sign(contractTX, wallet);
 
-	const response = await arweave.transactions.post(contractTX);
+	const response = await this.post(contractTX);
 	// const response = await this.post(contractTX);
 
 	if (response.status === 200 || response.status === 208) {
@@ -192,7 +190,7 @@ export const createContractFromTx = async (
 	} else {
 		throw new Error('Unable to write Contract Initial State');
 	}
-};
+}
 
 // creates a new ArDag object
 export function create({ arweave, post = null }) {
