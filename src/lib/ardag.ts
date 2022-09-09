@@ -1,7 +1,7 @@
 import type { CreateTransactionInterface } from 'arweave/node/common';
 import type { JWKInterface } from 'arweave/node/lib/wallet';
 import type Transaction from 'arweave/node/lib/transaction';
-import { createDagRepo, encode } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
+import { encode } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
 import type { DagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
 
 import defaultContractSrc from './contract/contractSrc.js?raw';
@@ -69,7 +69,8 @@ export async function getInstance({
 	// make some reasonable defaults for people
 	state.owner = options?.owner || (await this.getAddress(wallet));
 	if (!state.owner) throw new Error('Contract must be owned by the Base64 JWK of a wallet');
-	if (!dag) dag = await createDagRepo();
+	if (!dag)
+		throw new Error('Supply a DagRepo from https://github.com/DougAnderson444/ipld-car-txs');
 	if (!contractId)
 		contractId = await this.createContract(
 			this.arweave,
@@ -205,8 +206,10 @@ export async function createContractFromTx(
 		throw new Error('Unable to write Contract Initial State');
 	}
 }
-
-export async function update(ardagtxid: string) {
+/**
+ * Updates an existing Areave Contract with a new state.ardagtxid
+ */
+export async function update(ardagtxid: string): Promise<void> {
 	// Create, Sign, Post
 	const tx = await this.createTx(this.contractId, { function: 'ArDagTx', ardagtxid });
 	await this.arweave.transactions.sign(tx, this.wallet);
@@ -215,6 +218,7 @@ export async function update(ardagtxid: string) {
 
 // creates a new ArDag object
 export function init({ arweave, post = null }) {
+	if (!arweave) throw new Error('Arweave instance must be provided');
 	// need to bind transactions.post to arweave.transactions as *this*
 	const doPost = arweave.transactions.post;
 	const boundPost = doPost.bind(arweave.transactions);
