@@ -101,13 +101,13 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	// now read the buffers from Arweave and load them into a new dag, see if they match
 	const rebuiltDag = await createDagRepo({ path: 'rebuiltDag' }); // make a barebones dag repo for fast loading
 
-	async function importer(rebuiltDag: DagRepo, tx: ArdbTransaction) {
+	async function importer(dag: DagRepo, tx: ArdbTransaction) {
 		console.log({ tx });
 		const parsed = JSON.parse(tx.tags.find((el) => el.name === 'Input').value);
 		const txid = parsed.ardagtxid;
 		const data = await arweave.transactions.getData(txid);
 		const buffer = new Uint8Array(decodeURLSafe(data));
-		const cid = await rebuiltDag.importBuffer(buffer); // as many as you need
+		const cid = await dag.importBuffer(buffer); // as many as you need
 		logger.log(`Loaded from Arweave ${cid.toString()}`);
 		return cid;
 	}
@@ -123,23 +123,28 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	logger.log(`v2: ${rebuiltCurrent}, match: ${v2.number == rebuiltCurrent}`);
 
 	// I can get an instance based on an existing contract, too
-	// Leaving out dag makes a new dag for us named 'ipfs' (original was call 'original-dag')
+	const newDag = await createDagRepo({ path: 'new-dag' });
 	const myRebuilt = await ardag.getInstance({
-		wallet: wallet.jwk,
-		contractId: myArDag.contractId
+		wallet: wallet.jwk, // use the same wallet as only the owner can publish updates
+		contractId: myArDag.contractId, // use existing contractId to pick up where we left off
+		dag: newDag // use a new dag repo to show that all transactions have been imported fresh
 	});
 
 	// I can use the existing contractId to add more date to both dag and arweave
 	rootCID = await myRebuilt.save(tag, v3);
+	logger.log(`Saved ${rootCID}`);
 
 	// the contract has been updated in Arweave and the IPFSRepo
 	const updateTxs = await ardb.search('transactions').tags(searchTags).findAll();
-	await importer(rebuiltDag, updateTxs[2]);
+
+	for (const tx of updateTxs) {
+		await importer(myRebuilt.dag, tx);
+	}
 
 	const rebuiltCurrentLatest = (
 		await myRebuilt.dag.get(rootCID, { path: `/${tag}/current/number` })
 	).value;
-	logger.log(`v3: ${rebuiltCurrentLatest}, match: ${v2.number == rebuiltCurrentLatest}`);
+	logger.log(`v3: ${rebuiltCurrentLatest}, match: ${v3.number == rebuiltCurrentLatest}`);
 
 	return `Pass tests? ${v1.number == rebuiltPrev && v2.number == rebuiltCurrent}`;
 }
