@@ -1,6 +1,8 @@
 import type { CreateTransactionInterface } from 'arweave/node/common';
 import type { JWKInterface } from 'arweave/node/lib/wallet';
 import type Transaction from 'arweave/node/lib/transaction';
+import { createDagRepo, encode } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
+import type { DagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
 
 import defaultContractSrc from './contract/contractSrc.js?raw';
 import state from './contract/initial-state.json';
@@ -8,8 +10,6 @@ import state from './contract/initial-state.json';
 // https://github.com/ArweaveTeam/SmartWeave/blob/4d09c66d832091805f583ba73e8da96cde2c0190/src/contract-interact.ts#L291
 // not exported by arweave-js, so re-written here
 export async function createTx(
-	// arweave: Arweave,
-	// wallet: JWKInterface | 'use_wallet',
 	contractId: string,
 	input: any,
 	tags?: { name: string; value: string }[] = [],
@@ -53,51 +53,68 @@ export async function getAddress(wallet?: JWKInterface | 'use_wallet'): Promise<
 	return await this.arweave.wallets.getAddress(wallet);
 }
 
-// Allow owner option, in case you want to set this contract up for someone else to write to
-// as a service
-async function createNewArDag(
-	wallet?: JWKInterface | 'use_wallet',
-	{ owner = false }: { owner?: string | false } = {}
-): Promise<string> {
-	this.wallet = wallet;
-	// deploys a new contract where we log tha data transactions
-	const o = owner || (await this.getAddress(wallet));
-	let contractID = await this.deploy({
-		client: this.arweave,
-		wallet: this.wallet,
-		details: {
-			owner: o
-		}
-	});
-	return contractID;
-}
-
-export async function deploy({
-	client,
-	wallet,
-	details,
-	source = false
+export async function getInstance({
+	wallet = null,
+	dag = null,
+	options = {},
+	owner = false,
+	source = false,
+	contractId = false // load existing contract, or create a new one
 }: {
-	client: Arweave;
-	wallet: JWKInterface;
-	details: object;
+	dag?: DagRepo;
+	wallet?: JWKInterface | 'use_wallet';
+	owner?: string | false;
 	source?: string;
-}) {
-	if (!details.owner) throw new Error('Contract must be owned');
-	state.owner = details.owner;
-	const contractSrc = source || defaultContractSrc;
-	const contractTxId = await this.createContract(
-		client,
-		wallet,
-		contractSrc,
-		JSON.stringify(state)
-	); // Legacy
+}): Promise<string> {
+	// make some reasonable defaults for people
+	console.log({ wallet });
+	state.owner = options?.owner || (await this.getAddress(wallet));
+	if (!state.owner) throw new Error('Contract must be owned by the Base64 JWK of a wallet');
+	if (!dag) dag = await createDagRepo();
+	if (!contractId)
+		contractId = await this.createContract(
+			this.arweave,
+			wallet,
+			options?.source || defaultContractSrc,
+			JSON.stringify(state)
+		);
 
-	return contractTxId;
+	return {
+		arweave: this.arweave, // inherit this from parent object
+		post: this.post, // inherit this from parent object
+		contractId,
+		wallet,
+		dag,
+		update,
+		createTx,
+		async save(tag: string, obj: object) {
+			const rootCID = await this.dag.tx.add(tag, obj);
+			const savedBuffer = await this.dag.tx.commit();
+			const { cid: carCid } = await encode(savedBuffer);
+
+			// create an Arweave data transaction
+			let tx = await this.arweave.createTransaction({ data: savedBuffer });
+
+			const tags = [
+				{ name: 'Root-CID', value: [rootCID.toString()] },
+				{ name: 'CAR-CID', value: [carCid.toString()] }
+			];
+
+			if (tags && tags.length) {
+				for (const tag of tags) {
+					tx.addTag(tag.name.toString(), tag.value.toString());
+				}
+			}
+			// post it to Arweave
+			await this.arweave.transactions.sign(tx, this.wallet);
+			await this.post(tx);
+			await this.update(tx.id);
+			return rootCID;
+		}
+	};
 }
 
 // smartweave without the post
-// otherwise I'd have to replace arweave.transactions.post with choice method
 /**
  * Create a new contract from a contract source file and an initial state.
  * Returns the contract id.
@@ -123,7 +140,6 @@ export async function createContract(
 	await arweave.transactions.sign(srcTx, wallet);
 
 	const response = await this.post(srcTx);
-	// const response = await this.post(srcTx);
 
 	if (response.status === 200 || response.status === 208) {
 		return await this.createContractFromTx(arweave, wallet, srcTx.id, initState);
@@ -183,7 +199,6 @@ export async function createContractFromTx(
 	await arweave.transactions.sign(contractTX, wallet);
 
 	const response = await this.post(contractTX);
-	// const response = await this.post(contractTX);
 
 	if (response.status === 200 || response.status === 208) {
 		return contractTX.id;
@@ -192,8 +207,15 @@ export async function createContractFromTx(
 	}
 }
 
+export async function update(ardagtxid: string) {
+	// Create, Sign, Post
+	const tx = await this.createTx(this.contractId, { function: 'ArDagTx', ardagtxid });
+	await this.arweave.transactions.sign(tx, this.wallet);
+	await this.post(tx);
+}
+
 // creates a new ArDag object
-export function create({ arweave, post = null }) {
+export function init({ arweave, post = null }) {
 	// need to bind transactions.post to arweave.transactions as *this*
 	const doPost = arweave.transactions.post;
 	const boundPost = doPost.bind(arweave.transactions);
@@ -201,11 +223,9 @@ export function create({ arweave, post = null }) {
 	return {
 		arweave,
 		post: post || boundPost,
-		createNewArDag,
-		getAddress,
-		createTx,
-		createContract,
-		createContractFromTx,
-		deploy
+		getInstance,
+		getAddress, // this.getAddress is required in getInstance
+		createContract, // this.createContract is required in getInstance
+		createContractFromTx // this.createContractFromTx is required in createContract
 	};
 }
