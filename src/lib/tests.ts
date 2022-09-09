@@ -2,6 +2,7 @@ import * as ArDag from '@douganderson444/ardag'; // this library
 import { createDagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
 import Arweave from 'arweave';
 import ArDB from 'ardb'; // access Arweave like a Database
+import type { ArdbTransaction } from 'ardb/lib/models/transaction';
 import { encodeURLSafe, decodeURLSafe } from '@stablelib/base64';
 
 // Bundlr access using dispatch
@@ -63,7 +64,7 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 		post = async (tx) => {
 			const resp = await p(tx);
 			await mine();
-			logger.log(`Mined ${tx.id}`);
+			// logger.log(`Mined ${tx.id}`);
 			return resp;
 		};
 	} else {
@@ -74,11 +75,12 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	}
 
 	const ardb = new ArDB(arweave);
-	const dag = await createDagRepo(); // make a barebones dag repo for fast loading
+	const dag = await createDagRepo({ path: 'original-dag' }); // make a barebones dag repo for fast loading
 
 	let tag = 'Mobile';
 	let v1 = { number: '555-1234' };
-	let v2 = { number: '+1-555-555-1234' };
+	let v2 = { number: '212-555-1234' };
+	let v3 = { number: '+1-212-555-1234' };
 
 	const ardag = ArDag.init({ arweave, post });
 
@@ -99,19 +101,45 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	// now read the buffers from Arweave and load them into a new dag, see if they match
 	const rebuiltDag = await createDagRepo({ path: 'rebuiltDag' }); // make a barebones dag repo for fast loading
 
-	for (const tx of txs) {
+	async function importer(rebuiltDag: DagRepo, tx: ArdbTransaction) {
+		console.log({ tx });
 		const parsed = JSON.parse(tx.tags.find((el) => el.name === 'Input').value);
 		const txid = parsed.ardagtxid;
 		const data = await arweave.transactions.getData(txid);
 		const buffer = new Uint8Array(decodeURLSafe(data));
-		const r = await rebuiltDag.importBuffer(buffer); // as many as you need
-		logger.log(`Loaded from Arweave ${r.toString()}`);
+		const cid = await rebuiltDag.importBuffer(buffer); // as many as you need
+		logger.log(`Loaded from Arweave ${cid.toString()}`);
+		return cid;
 	}
 
-	const rebuiltCurrent = (await rebuiltDag.get(rootCID, { path: `/${tag}/current/number` })).value;
-	logger.log(rebuiltCurrent, v2.number == rebuiltCurrent);
+	for (const tx of txs) {
+		await importer(rebuiltDag, tx);
+	}
+
 	const rebuiltPrev = (await rebuiltDag.get(rootCID, { path: `/${tag}/prev/number` })).value;
-	logger.log(rebuiltPrev, v1.number == rebuiltPrev);
+	logger.log(`v1: ${rebuiltPrev}, match: ${v1.number == rebuiltPrev}`);
+
+	const rebuiltCurrent = (await rebuiltDag.get(rootCID, { path: `/${tag}/current/number` })).value;
+	logger.log(`v2: ${rebuiltCurrent}, match: ${v2.number == rebuiltCurrent}`);
+
+	// I can get an instance based on an existing contract, too
+	// Leaving out dag makes a new dag for us named 'ipfs' (original was call 'original-dag')
+	const myRebuilt = await ardag.getInstance({
+		wallet: wallet.jwk,
+		contractId: myArDag.contractId
+	});
+
+	// I can use the existing contractId to add more date to both dag and arweave
+	rootCID = await myRebuilt.save(tag, v3);
+
+	// the contract has been updated in Arweave and the IPFSRepo
+	const updateTxs = await ardb.search('transactions').tags(searchTags).findAll();
+	await importer(rebuiltDag, updateTxs[2]);
+
+	const rebuiltCurrentLatest = (
+		await myRebuilt.dag.get(rootCID, { path: `/${tag}/current/number` })
+	).value;
+	logger.log(`v3: ${rebuiltCurrentLatest}, match: ${v2.number == rebuiltCurrentLatest}`);
 
 	return `Pass tests? ${v1.number == rebuiltPrev && v2.number == rebuiltCurrent}`;
 }
