@@ -1,8 +1,11 @@
 import type { CreateTransactionInterface } from 'arweave/node/common';
 import type { JWKInterface } from 'arweave/node/lib/wallet';
 import type Transaction from 'arweave/node/lib/transaction';
-import { encode } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
+import { importBuffer, encode } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
 import type { DagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
+import ArDB from 'ardb'; // access Arweave like a Database
+import type { ArdbTransaction } from 'ardb/lib/models/transaction';
+import { encodeURLSafe, decodeURLSafe } from '@stablelib/base64';
 
 import defaultContractSrc from './contract/contractSrc.js?raw';
 import state from './contract/initial-state.json';
@@ -53,19 +56,64 @@ export async function getAddress(wallet?: JWKInterface | 'use_wallet'): Promise<
 	return await this.arweave.wallets.getAddress(wallet);
 }
 
-export async function getInstance({
-	wallet = null,
-	dag = null,
-	options = {},
-	owner = false,
-	source = false,
-	contractId = false // load existing contract, or create a new one
+// load a DagAPI with existing data from contractId
+export async function load({
+	contractId,
+	dag,
+	arweave = null
 }: {
-	dag?: DagRepo;
+	contractId: string;
+	dag: DagAPI;
+	arweave?: Arweave;
+}) {
+	if (!contractId) throw new Error('contractId is required');
+	if (!dag) {
+		if (!this.dag) throw new Error('DagRepo is required');
+		dag = this.dag;
+	}
+	if (!arweave) {
+		if (!this.arweave) throw new Error('Arweave is required');
+		arweave = this.arweave;
+	}
+	// load buffer from Contract transactions
+	const searchTags = [
+		{ name: 'App-Name', values: ['SmartWeaveAction'] },
+		{ name: 'Contract', values: [contractId] }
+	];
+
+	const ardb = new ArDB(arweave);
+
+	const txs = await ardb.search('transactions').tags(searchTags).findAll();
+
+	const importer = async (dag: DagRepo, tx: ArdbTransaction) => {
+		const parsed = JSON.parse(tx.tags.find((el) => el.name === 'Input').value);
+		const txid = parsed.ardagtxid;
+		try {
+			const data = await arweave.transactions.getData(txid);
+			const buffer = new Uint8Array(decodeURLSafe(data));
+			const cid = await importBuffer(dag, buffer); // as many as you need
+			// console.log(`Loaded from Arweave ${cid.toString()}`);
+		} catch (error) {
+			console.log('Import failed', error);
+		}
+	};
+
+	for (const tx of txs) {
+		await importer(dag, tx);
+	}
+}
+
+export async function getInstance({
+	dag,
+	wallet = null,
+	contractId = false, // load existing contract, or create a new one
+	options = { owner: null, source: null }
+}: {
+	dag: DagRepo;
 	wallet?: JWKInterface | 'use_wallet';
-	owner?: string | false;
-	source?: string;
-}): Promise<string> {
+	contractId?: string;
+	options: { owner?: string; source?: string };
+}): Promise<{ arweave: Arweave; contractId: string; save: Function }> {
 	// make some reasonable defaults for people
 	state.owner = options?.owner || (await this.getAddress(wallet));
 	if (!state.owner) throw new Error('Contract must be owned by the Base64 JWK of a wallet');
@@ -78,6 +126,7 @@ export async function getInstance({
 			options?.source || defaultContractSrc,
 			JSON.stringify(state)
 		);
+	else await this.load({ dag, contractId });
 
 	return {
 		arweave: this.arweave, // inherit this from parent object
@@ -85,7 +134,8 @@ export async function getInstance({
 		contractId,
 		wallet,
 		dag,
-		update,
+		load, // myArDag.load(contractId) may need to be called if the Arweave is written from elsewhere after getInstance was originally called
+		updateContract,
 		createTx,
 		async save(tag: string, obj: object) {
 			const rootCID = await this.dag.tx.add(tag, obj);
@@ -108,7 +158,7 @@ export async function getInstance({
 			// post it to Arweave
 			await this.arweave.transactions.sign(tx, this.wallet);
 			await this.post(tx);
-			await this.update(tx.id);
+			await this.updateContract(tx.id);
 			return rootCID;
 		}
 	};
@@ -209,7 +259,7 @@ export async function createContractFromTx(
 /**
  * Updates an existing Areave Contract with a new state.ardagtxid
  */
-export async function update(ardagtxid: string): Promise<void> {
+export async function updateContract(ardagtxid: string): Promise<void> {
 	// Create, Sign, Post
 	const tx = await this.createTx(this.contractId, { function: 'ArDagTx', ardagtxid });
 	await this.arweave.transactions.sign(tx, this.wallet);
@@ -217,7 +267,7 @@ export async function update(ardagtxid: string): Promise<void> {
 }
 
 // creates a new ArDag object
-export function init({ arweave, post = null }) {
+export function initializeArDag({ arweave, post = null }: { arweave: Arweave; post?: any }): ArDag {
 	if (!arweave) throw new Error('Arweave instance must be provided');
 	// need to bind transactions.post to arweave.transactions as *this*
 	const doPost = arweave.transactions.post;
@@ -227,6 +277,7 @@ export function init({ arweave, post = null }) {
 		arweave,
 		post: post || boundPost,
 		getInstance,
+		load, // this.load is required in getInstance
 		getAddress, // this.getAddress is required in getInstance
 		createContract, // this.createContract is required in getInstance
 		createContractFromTx // this.createContractFromTx is required in createContract

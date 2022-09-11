@@ -68,7 +68,7 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 			return resp;
 		};
 	} else {
-		arweave = Arweave.init({});
+		arweave = Arweave.initializeArDag({});
 		// use Bunldr for production
 		await generateRsaJwk();
 		post = wallet.arweaveWalletAPI.dispatch; // need to have browser open to approve confirmation if > 100kb
@@ -82,7 +82,7 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	let v2 = { number: '212-555-1234' };
 	let v3 = { number: '+1-212-555-1234' };
 
-	const ardag = ArDag.init({ arweave, post });
+	const ardag = ArDag.initializeArDag({ arweave, post });
 
 	// create a contract if you don't have one
 	// const contractId = await ardag.generateContract(wallet.jwk); // uses wallet if no jwk specified
@@ -90,36 +90,16 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	rootCID = await myArDag.save(tag, v1);
 	rootCID = await myArDag.save(tag, v2);
 
-	// load buffer from Contract transactions
-	const searchTags = [
-		{ name: 'App-Name', values: ['SmartWeaveAction'] },
-		{ name: 'Contract', values: [myArDag.contractId] }
-	];
-
-	const txs = await ardb.search('transactions').tags(searchTags).findAll();
-
 	// now read the buffers from Arweave and load them into a new dag, see if they match
 	const rebuiltDag = await createDagRepo({ path: 'rebuiltDag' }); // make a barebones dag repo for fast loading
 
-	async function importer(dag: DagRepo, tx: ArdbTransaction) {
-		console.log({ tx });
-		const parsed = JSON.parse(tx.tags.find((el) => el.name === 'Input').value);
-		const txid = parsed.ardagtxid;
-		const data = await arweave.transactions.getData(txid);
-		const buffer = new Uint8Array(decodeURLSafe(data));
-		const cid = await dag.importBuffer(buffer); // as many as you need
-		logger.log(`Loaded from Arweave ${cid.toString()}`);
-		return cid;
-	}
+	// load a Dag with existing data from contractId
+	await ardag.load({ dag: rebuiltDag, contractId: myArDag.contractId });
 
-	for (const tx of txs) {
-		await importer(rebuiltDag, tx);
-	}
-
-	const rebuiltPrev = (await rebuiltDag.get(rootCID, { path: `/${tag}/prev/number` })).value;
+	const rebuiltPrev = (await rebuiltDag.get(rootCID, { path: `/${tag}/prev/obj/number` })).value;
 	logger.log(`v1: ${rebuiltPrev}, match: ${v1.number == rebuiltPrev}`);
 
-	const rebuiltCurrent = (await rebuiltDag.get(rootCID, { path: `/${tag}/current/number` })).value;
+	const rebuiltCurrent = (await rebuiltDag.get(rootCID, { path: `/${tag}/obj/number` })).value;
 	logger.log(`v2: ${rebuiltCurrent}, match: ${v2.number == rebuiltCurrent}`);
 
 	// I can get an instance based on an existing contract, too
@@ -134,16 +114,8 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	rootCID = await myRebuilt.save(tag, v3);
 	logger.log(`Saved ${rootCID}`);
 
-	// the contract has been updated in Arweave and the IPFSRepo
-	const updateTxs = await ardb.search('transactions').tags(searchTags).findAll();
-
-	for (const tx of updateTxs) {
-		await importer(myRebuilt.dag, tx);
-	}
-
-	const rebuiltCurrentLatest = (
-		await myRebuilt.dag.get(rootCID, { path: `/${tag}/current/number` })
-	).value;
+	const rebuiltCurrentLatest = (await myRebuilt.dag.get(rootCID, { path: `/${tag}/obj/number` }))
+		.value;
 	logger.log(`v3: ${rebuiltCurrentLatest}, match: ${v3.number == rebuiltCurrentLatest}`);
 
 	return `Pass tests? ${v1.number == rebuiltPrev && v2.number == rebuiltCurrent}`;
