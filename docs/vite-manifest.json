@@ -1,12 +1,12 @@
 {
   "node_modules/@sveltejs/kit/src/runtime/client/start.js": {
-    "file": "_app/immutable/start-063bce8b.js",
+    "file": "_app/immutable/start-e756d26a.js",
     "src": "node_modules/@sveltejs/kit/src/runtime/client/start.js",
     "isEntry": true,
     "imports": [
       "_preload-helper-aa6bc0ce.js",
       "_index-d3b093d4.js",
-      "_singletons-33afca54.js"
+      "_singletons-83150b8d.js"
     ],
     "dynamicImports": [
       ".svelte-kit/generated/nodes/0.js",
@@ -23,16 +23,16 @@
     ]
   },
   "node_modules/@sveltejs/kit/src/runtime/components/error.svelte": {
-    "file": "_app/immutable/components/error.svelte-d48e5bb5.js",
+    "file": "_app/immutable/components/error.svelte-d2f3575b.js",
     "src": "node_modules/@sveltejs/kit/src/runtime/components/error.svelte",
     "isEntry": true,
     "imports": [
       "_index-d3b093d4.js",
-      "_singletons-33afca54.js"
+      "_singletons-83150b8d.js"
     ]
   },
   "src/routes/+page.svelte": {
-    "file": "_app/immutable/components/pages/_page.svelte-8d47979e.js",
+    "file": "_app/immutable/components/pages/_page.svelte-e99d5122.js",
     "src": "src/routes/+page.svelte",
     "isEntry": true,
     "imports": [
@@ -51,8 +51,8 @@
       "__layout-451ebc70.js"
     ]
   },
-  "_singletons-33afca54.js": {
-    "file": "_app/immutable/chunks/singletons-33afca54.js",
+  "_singletons-83150b8d.js": {
+    "file": "_app/immutable/chunks/singletons-83150b8d.js",
     "imports": [
       "_index-d3b093d4.js"
     ]
@@ -76,7 +76,7 @@
     ]
   },
   ".svelte-kit/generated/nodes/1.js": {
-    "file": "_app/immutable/chunks/1-04361df8.js",
+    "file": "_app/immutable/chunks/1-96294c8c.js",
     "src": ".svelte-kit/generated/nodes/1.js",
     "isDynamicEntry": true,
     "imports": [
@@ -84,7 +84,7 @@
     ]
   },
   ".svelte-kit/generated/nodes/2.js": {
-    "file": "_app/immutable/chunks/2-de456281.js",
+    "file": "_app/immutable/chunks/2-cc499311.js",
     "src": ".svelte-kit/generated/nodes/2.js",
     "isDynamicEntry": true,
     "imports": [
@@ -92,7 +92,7 @@
     ]
   },
   "src/lib/index.js": {
-    "file": "_app/immutable/chunks/index-fe63e4a2.js",
+    "file": "_app/immutable/chunks/index-3015cadc.js",
     "src": "src/lib/index.js",
     "isDynamicEntry": true
   }
