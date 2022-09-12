@@ -92,6 +92,7 @@ export async function load({
 			const data = await arweave.transactions.getData(txid);
 			const buffer = new Uint8Array(decodeURLSafe(data));
 			const cid = await importBuffer(dag, buffer); // as many as you need
+			if (!this.rootCID) this.rootCID = cid; // make the most recent rootCID this rootCID
 			// console.log(`Loaded from Arweave ${cid.toString()}`);
 		} catch (error) {
 			console.log('Import failed', error);
@@ -102,7 +103,14 @@ export async function load({
 		await importer(dag, tx);
 	}
 }
-
+/**
+ * Convenience function for (await arDagInst.dag.get(rootCID, { path: `/${tag}/obj` })).value;
+ *
+ */
+export async function latest(tag: string) {
+	const res = await this.dag.get(this.rootCID, { path: `/${tag}/obj` });
+	return res.value;
+}
 export async function getInstance({
 	dag,
 	wallet = null,
@@ -137,8 +145,11 @@ export async function getInstance({
 		load, // myArDag.load(contractId) may need to be called if the Arweave is written from elsewhere after getInstance was originally called
 		updateContract,
 		createTx,
+		rootCID: this.rootCID || null,
+		latest,
 		async save(tag: string, obj: object) {
 			const rootCID = await this.dag.tx.add(tag, obj);
+			this.rootCID = rootCID;
 			const savedBuffer = await this.dag.tx.commit();
 			const { cid: carCid } = await encode(savedBuffer);
 

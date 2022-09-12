@@ -104,19 +104,22 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 
 	// I can get an instance based on an existing contract, too
 	const newDag = await createDagRepo({ path: 'new-dag' });
-	const myRebuilt = await ardag.getInstance({
+	const myNewArDag = await ardag.getInstance({
 		wallet: wallet.jwk, // use the same wallet as only the owner can publish updates
 		contractId: myArDag.contractId, // use existing contractId to pick up where we left off
 		dag: newDag // use a new dag repo to show that all transactions have been imported fresh
 	});
 
 	// I can use the existing contractId to add more date to both dag and arweave
-	rootCID = await myRebuilt.save(tag, v3);
+	rootCID = await myNewArDag.save(tag, v3);
 	logger.log(`Saved ${rootCID}`);
 
-	const rebuiltCurrentLatest = (await myRebuilt.dag.get(rootCID, { path: `/${tag}/obj/number` }))
+	const rebuiltCurrentLatest = (await myNewArDag.dag.get(rootCID, { path: `/${tag}/obj/number` }))
 		.value;
 	logger.log(`v3: ${rebuiltCurrentLatest}, match: ${v3.number == rebuiltCurrentLatest}`);
 
-	return `Pass tests? ${v1.number == rebuiltPrev && v2.number == rebuiltCurrent}`;
+	const rcLatest = await myNewArDag.latest(tag);
+	logger.log(`v3.1: ${rcLatest.number}, match: ${v3.number == rcLatest.number}`);
+
+	return `Pass tests.`;
 }
