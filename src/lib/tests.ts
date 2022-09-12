@@ -112,7 +112,6 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 
 	// I can use the existing contractId to add more date to both dag and arweave
 	rootCID = await myNewArDag.save(tag, v3);
-	logger.log(`Saved ${rootCID}`);
 
 	const rebuiltCurrentLatest = (await myNewArDag.dag.get(rootCID, { path: `/${tag}/obj/number` }))
 		.value;

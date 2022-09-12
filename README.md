@@ -16,7 +16,9 @@ import * as ArDag  from '@douganderson444/ardag'`
 
 ### initializeArDag
 
-`const ardag = initializeArDag({ arweave: Arweave, post?: Function })`
+```js
+const ardag = initializeArDag({ arweave: Arweave, post?: Function })
+```
 
 Where Arweave client is mandatory, and `post` is an optional override function you can pass in to post uploads to Arweave. By default and for testing purposes, use `arweave.transaction.post`, and for Bundlr you'd use `wallet.arweaveAPI.dispatch` (when using [PeerPiper/web3-wallet-connector](https://github.com/PeerPiper/web3-wallet-connector)) or ArConnect's `.dispatch()` feature.
 
@@ -36,9 +38,9 @@ const myArDag = await ardag.getInstance({
 
 Where `dag` is a required `type DagRepo` from [@douganderson444/ipld-car-txs](https://github.com/DougAnderson444/ipld-car-txs). A `DagRepo` is an extension of [DagAPI](https://github.com/ipfs/js-ipfs/blob/89aeaf8e25320276391653104981e37a73f29de9/packages/ipfs-core/src/components/dag/index.js#L7) with a `tx` property which enables you to build a Dag one transaction at a time (and save it to Arweave using this library).
 
-Where `wallet` is an Arweave `JWKInterface`, defaults to the string `use_wallet`. It will look for a `arweavewallet` on the `window` oject (see [PeerPiper/web3-wallet-connector](https://github.com/PeerPiper/web3-wallet-connector) to make one in 4 lines of code)
+Where `wallet` is an Arweave `JWKInterface`, defaults to the string `use_wallet`. If no `JWK` is specified, ArDag will look for a `arweavewallet` on the `window` oject (see [PeerPiper/web3-wallet-connector](https://github.com/PeerPiper/web3-wallet-connector) to make one in 4 lines of code)
 
-Where `owner` is an optional Smartweave Contract owner, if you want to set the write ability to someone other than the wallet owner (if you are setting up an ArDag for someone else).
+Where `owner` is an optional Smartweave Contract owner, if you want to set the write ability to someone other than the wallet owner (if you are setting up an ArDag for someone else). Only the `owner` of this Contract can `save` to it.
 
 Where `source` is optional custom Arweave Smartweave Contract source to override the default contract (advanced users only).
 
@@ -52,36 +54,36 @@ Once you have an instance initialized and made, you can save data to it. Save an
 let rootCID = await myArDag.save(tag, object);
 ```
 
-Where `tag: string, object: object`.
+Where `tag: string, object: object`. For example, to save a phone number object to a "Phone" tag:
 
 ```js
 let rootCID = await myArDag.save('Phone', { number: '555-1234' });
 ```
 
-Saves a `tag` key associated with any object to the Root of the Dag. After save, `rootCID/tag/val` will get `object`. Previously saved tags will be available at `rootCID/tag/prev/val` and `rootCID/tag/prev/prev/val` and so on down to the genesis version saved.
+This saves a `tag` key associated with any object to the root of the Dag. After save, `rootCID/tag/obj` will get `object`. Previously saved tags will be available at `rootCID/tag/prev/obj` and `rootCID/tag/prev/prev/obj` and so on down to the genesis version saved. Most of the time you will just want the latest object value, so use the following convenience function to get it:
 
 ### instance.latest(tag)
 
-Once you have saved or loaded ArDag data into your ArDag instance, you can get the latest tag info using the convenience function:
+Once you have ArDag data into your ArDag instance, you can get the latest tag info using the convenience function:
 
 ```js
 const latestPhone = await myArDag.latest('Phone');
 console.log(latestPhone.number); // 555-1234
 ```
 
-### `await instance.dag.get(cid, {path: '/tag/path/to/value})`
+### instance.dag.get(cid, {path: '/tag/obj/path/to/value})
 
-The easiest way to then get the latest data from your writable instance is to use the embedded `dag` property to get the value.
+The advanced way to then get the latest data from your writable instance is to use the `dag` property + the `path` to get the value. This is the same as `ipfs.dag`, with the object being under the `obj` key, and previous version being under the `prev/obj` or `prev/prev/obj` or `prev/prev/prev/obj` key.
 
 ```js
 // dag is DagAPI (ipfs.dag.get) or a DagRepo
 
-let currentNumber = (await myArDag.dag.get(dag.rootCID, { path: `/${tag}/val` })).value;
+let currentNumber = (await myArDag.dag.get(dag.rootCID, { path: `/${tag}/obj/number` })).value;
 
-const prevObj = (await myArDag.dag.get(dag.rootCID, { path: `/${tag}/prev/val` })).value;
+const prevObj = (await myArDag.dag.get(dag.rootCID, { path: `/${tag}/prev/obj/number` })).value;
 ```
 
-### `load()`
+### load()
 
 If you are only going to read an ArDag from an Arweave contract by loading it into your DAG, use load.
 
@@ -90,17 +92,20 @@ import { createDagRepo } from '@douganderson444/ipld-car-txs';
 import * as ArDag from '@douganderson444/ardag';
 
 const ardag = ArDag.initializeArDag({ arweave, post });
-const dag = await createDagRepo(); // DagRepo = ipfs.DagAPI + a tx property from ipld-dag-txs
+const dag = await createDagRepo({ path: 'optional-unique-path-name' }); // DagRepo = ipfs.DagAPI + a tx property from ipld-dag-txs
 await ardag.load({ dag, contractId });
+const latestPhone = await ardag.latest('phone');
 
-// now I can access the dag data from my dag object
-const phoneNumber = (await dag.get(rootCID, { path: 'contact/obj/phone' })).value;
-const oldPhoneNumber = (await dag.get(rootCID, { path: 'contact/prev/obj/phone' })).value;
+// advanced method via the dag data from my dag object
+const phoneNumber = (await dag.get(dag.rootCID, { path: 'contact/obj/phone' })).value;
+const oldPhoneNumber = (await dag.get(dag.rootCID, { path: 'contact/prev/obj/phone' })).value;
 ```
 
-## Where
+If this contractId is the only Dag I have loaded, dag.rootCID will be set to contractId's latest root CID. It is therefor recommended that you only load a single contractId Dag per ArDag instance, even though ArDag won't stop you from loading multiple. Just create a new ArDag instance for a newly loaded ArDag.
 
-Experiments located in `./src/lib/tests.ts`
+## Demo/Tests
+
+Full experiments located in `./src/lib/tests.ts`
 
 ## Run
 
@@ -112,10 +117,12 @@ run `npm run dev:arlocal` to start a local instance of Arweave:
 
 `npm run dev:arlocal`
 
-Then navigate to localhost and see the test pass.
+Then navigate to localhost, paste your arlocal url in the input slot, and see the test pass.
 
 # Design
 
 The data is saved to Arweave [data transactions](https://github.com/ArweaveTeam/arweave-js#create-a-data-transaction). Then the transaction id (txid) is saved as an entry in the Smartweave contract.
 
 This way, the entire DAG can be retrieved simply by iterating through the ContractID and resolving the data transactions.
+
+RootCID is set to the latest rootCID for the loaded contractId.
