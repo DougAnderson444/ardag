@@ -113,17 +113,12 @@ export async function latest(tag: string) {
 export async function getInstance({
 	dag,
 	wallet = null,
-	dagOwner = false, // load existing contract, or create a new one
-	options = { owner: null, source: null }
+	dagOwner = false // load existing contract, or create a new one
 }: {
 	dag: DagRepo;
 	wallet?: JWKInterface | 'use_wallet';
 	dagOwner?: string;
-	options: { owner?: string; source?: string };
 }): Promise<{ save: Function }> {
-	// make some reasonable defaults for people
-	state.owner = options?.owner || (await this.getAddress(wallet));
-	if (!state.owner) throw new Error('Contract must be owned by the Base64 JWK of a wallet');
 	if (!dag)
 		throw new Error('Supply a DagRepo from https://github.com/DougAnderson444/ipld-car-txs');
 	if (!dagOwner) {
