@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 
 	let result: string = '';
-	let serverUrl: string;
+	let serverUrl: string = 'http://localhost:1984';
 	let tests;
 	let error: string;
 	onMount(async () => {
