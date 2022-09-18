@@ -30,21 +30,13 @@ Once you've initialized an ArDag, you can use the client to make or get an insta
 const myArDag = await ardag.getInstance({
 	dag: DagRepo;
 	wallet?: JWKInterface | 'use_wallet';
-	owner?: string | false;
-	source?: string;
-	contractId?: string;
+	dagOwner?: string | false;
 })
 ```
 
 Where `dag` is a required `type DagRepo` from [@douganderson444/ipld-car-txs](https://github.com/DougAnderson444/ipld-car-txs). A `DagRepo` is an extension of [DagAPI](https://github.com/ipfs/js-ipfs/blob/89aeaf8e25320276391653104981e37a73f29de9/packages/ipfs-core/src/components/dag/index.js#L7) with a `tx` property which enables you to build a Dag one transaction at a time (and save it to Arweave using this library).
 
 Where `wallet` is an Arweave `JWKInterface`, defaults to the string `use_wallet`. If no `JWK` is specified, ArDag will look for a `arweavewallet` on the `window` oject (see [PeerPiper/web3-wallet-connector](https://github.com/PeerPiper/web3-wallet-connector) to make one in 4 lines of code)
-
-Where `owner` is an optional Smartweave Contract owner, if you want to set the write ability to someone other than the wallet owner (if you are setting up an ArDag for someone else). Only the `owner` of this Contract can `save` to it.
-
-Where `source` is optional custom Arweave Smartweave Contract source to override the default contract (advanced users only).
-
-Where `contractId` is an optional pre-existing Smartweave Contract Id (Tx ID) to load for this instance. Useful for continuing to add to an existing ArDAG. If not set, ArDag will create a new contract for you so you can start a fresh one.
 
 ### instance.save()
 
@@ -93,7 +85,7 @@ import * as ArDag from '@douganderson444/ardag';
 
 const ardag = ArDag.initializeArDag({ arweave, post });
 const dag = await createDagRepo({ path: 'optional-unique-path-name' }); // DagRepo = ipfs.DagAPI + a tx property from ipld-dag-txs
-await ardag.load({ dag, contractId });
+await ardag.load({ dagOwner, dag, arweave });
 const latestPhone = await ardag.latest('phone');
 
 // advanced method via the dag data from my dag object
@@ -101,7 +93,7 @@ const phoneNumber = (await dag.get(dag.rootCID, { path: 'contact/obj/phone' })).
 const oldPhoneNumber = (await dag.get(dag.rootCID, { path: 'contact/prev/obj/phone' })).value;
 ```
 
-If this contractId is the only Dag I have loaded, dag.rootCID will be set to contractId's latest root CID. It is therefor recommended that you only load a single contractId Dag per ArDag instance, even though ArDag won't stop you from loading multiple. Just create a new ArDag instance for a newly loaded ArDag.
+During `load`, `dag.rootCID` will be set to the first root CID loaded, which should be the latest buffer saved to Arweave.
 
 ## Demo/Tests
 
