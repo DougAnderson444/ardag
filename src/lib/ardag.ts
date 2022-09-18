@@ -6,9 +6,12 @@ import type { DagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one 
 import ArDB from 'ardb'; // access Arweave like a Database
 import type { ArdbTransaction } from 'ardb/lib/models/transaction';
 import { encodeURLSafe, decodeURLSafe } from '@stablelib/base64';
+import type { IPFS } from 'ipfs-core-types';
 
 import defaultContractSrc from './contract/contractSrc.js?raw';
 import state from './contract/initial-state.json';
+
+const AR_DAG = 'ArDag';
 
 // https://github.com/ArweaveTeam/SmartWeave/blob/4d09c66d832091805f583ba73e8da96cde2c0190/src/contract-interact.ts#L291
 // not exported by arweave-js, so re-written here
@@ -56,17 +59,17 @@ export async function getAddress(wallet?: JWKInterface | 'use_wallet'): Promise<
 	return await this.arweave.wallets.getAddress(wallet);
 }
 
-// load a DagAPI with existing data from contractId
+// load a DagAPI with existing data from dagOwner
 export async function load({
-	contractId,
+	dagOwner,
 	dag,
 	arweave = null
 }: {
-	contractId: string;
+	dagOwner: string;
 	dag: DagAPI;
 	arweave?: Arweave;
 }) {
-	if (!contractId) throw new Error('contractId is required');
+	if (!dagOwner) throw new Error('dagOwner is required');
 	if (!dag) {
 		if (!this.dag) throw new Error('DagRepo is required');
 		dag = this.dag;
@@ -76,20 +79,16 @@ export async function load({
 		arweave = this.arweave;
 	}
 	// load buffer from Contract transactions
-	const searchTags = [
-		{ name: 'App-Name', values: ['SmartWeaveAction'] },
-		{ name: 'Contract', values: [contractId] }
-	];
+	const searchTags = [{ name: 'App-Name', values: [AR_DAG] }];
 
 	const ardb = new ArDB(arweave);
+	const txs = await ardb.search('transactions').tags(searchTags).from(dagOwner).findAll();
 
-	const txs = await ardb.search('transactions').tags(searchTags).findAll();
-
-	const importer = async (dag: DagRepo, tx: ArdbTransaction) => {
-		const parsed = JSON.parse(tx.tags.find((el) => el.name === 'Input').value);
-		const txid = parsed.ardagtxid;
+	const importer = async (dag: IPFS['dag'], tx: ArdbTransaction) => {
+		// const parsed = JSON.parse(tx.tags.find((el) => el.name === 'Input').value);
+		// const txid = parsed.ardagtxid;
 		try {
-			const data = await arweave.transactions.getData(txid);
+			const data = await arweave.transactions.getData(tx.id);
 			const buffer = new Uint8Array(decodeURLSafe(data));
 			const cid = await importBuffer(dag, buffer); // as many as you need
 			if (!this.rootCID) this.rootCID = cid; // make the most recent rootCID this rootCID
@@ -114,35 +113,31 @@ export async function latest(tag: string) {
 export async function getInstance({
 	dag,
 	wallet = null,
-	contractId = false, // load existing contract, or create a new one
+	dagOwner = false, // load existing contract, or create a new one
 	options = { owner: null, source: null }
 }: {
 	dag: DagRepo;
 	wallet?: JWKInterface | 'use_wallet';
-	contractId?: string;
+	dagOwner?: string;
 	options: { owner?: string; source?: string };
-}): Promise<{ arweave: Arweave; contractId: string; save: Function }> {
+}): Promise<{ save: Function }> {
 	// make some reasonable defaults for people
 	state.owner = options?.owner || (await this.getAddress(wallet));
 	if (!state.owner) throw new Error('Contract must be owned by the Base64 JWK of a wallet');
 	if (!dag)
 		throw new Error('Supply a DagRepo from https://github.com/DougAnderson444/ipld-car-txs');
-	if (!contractId)
-		contractId = await this.createContract(
-			this.arweave,
-			wallet,
-			options?.source || defaultContractSrc,
-			JSON.stringify(state)
-		);
-	else await this.load({ dag, contractId });
+	if (!dagOwner) {
+		// dagOwner is sha256 hash of wallet public key
+		dagOwner = await this.arweave.wallets.jwkToAddress(wallet);
+	} else await this.load({ dag, dagOwner });
 
 	return {
 		arweave: this.arweave, // inherit this from parent object
 		post: this.post, // inherit this from parent object
-		contractId,
+		dagOwner,
 		wallet,
 		dag,
-		load, // myArDag.load(contractId) may need to be called if the Arweave is written from elsewhere after getInstance was originally called
+		load, // myArDag.load(dagOwner) may need to be called if the Arweave is written from elsewhere after getInstance was originally called
 		updateContract,
 		createTx,
 		rootCID: this.rootCID || null,
@@ -157,6 +152,7 @@ export async function getInstance({
 			let tx = await this.arweave.createTransaction({ data: savedBuffer });
 
 			const tags = [
+				{ name: 'App-Name', value: [AR_DAG] },
 				{ name: 'Root-CID', value: [rootCID.toString()] },
 				{ name: 'CAR-CID', value: [carCid.toString()] }
 			];
@@ -169,7 +165,7 @@ export async function getInstance({
 			// post it to Arweave
 			await this.arweave.transactions.sign(tx, this.wallet);
 			await this.post(tx);
-			await this.updateContract(tx.id);
+			// await this.updateContract(tx.id);
 			return rootCID;
 		}
 	};

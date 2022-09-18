@@ -121,8 +121,6 @@ Then navigate to localhost, paste your arlocal url in the input slot, and see th
 
 # Design
 
-The data is saved to Arweave [data transactions](https://github.com/ArweaveTeam/arweave-js#create-a-data-transaction). Then the transaction id (txid) is saved as an entry in the Smartweave contract.
+The data is saved to Arweave [data transactions](https://github.com/ArweaveTeam/arweave-js#create-a-data-transaction) with the Tag "ArDag". Then the transactions are retrieved by searcing this wallet's ArDag.
 
-This way, the entire DAG can be retrieved simply by iterating through the ContractID and resolving the data transactions.
-
-RootCID is set to the latest rootCID for the loaded contractId.
+RootCID is set to the latest rootCID for the most recent transaction.

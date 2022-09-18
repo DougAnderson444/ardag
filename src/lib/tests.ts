@@ -87,6 +87,7 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	// create a contract if you don't have one
 	// const contractId = await ardag.generateContract(wallet.jwk); // uses wallet if no jwk specified
 	const myArDag = await ardag.getInstance({ wallet: wallet.jwk, dag }); // has contractId and wallet properties
+
 	rootCID = await myArDag.save(tag, v1);
 	rootCID = await myArDag.save(tag, v2);
 
@@ -94,7 +95,9 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	const rebuiltDag = await createDagRepo({ path: 'rebuiltDag' }); // make a barebones dag repo for fast loading
 
 	// load a Dag with existing data from contractId
-	await ardag.load({ dag: rebuiltDag, contractId: myArDag.contractId });
+	// get address from jwk
+	const address = await arweave.wallets.getAddress(wallet.jwk);
+	await ardag.load({ dag: rebuiltDag, dagOwner: address });
 
 	const rebuiltPrev = (await rebuiltDag.get(rootCID, { path: `/${tag}/prev/obj/number` })).value;
 	logger.log(`v1: ${rebuiltPrev}, match: ${v1.number == rebuiltPrev}`);
