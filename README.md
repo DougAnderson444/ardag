@@ -6,6 +6,60 @@ Save an IPLD DAG in Arweave, one transaction at a time. Minimizes data duplicati
 
 ## API
 
+There are only 2 critical API for this library: `persist` and `load`. Persist saves a `dag` transaction buffer to Arweave, and `load` loads them from Arweave into a `dagAPI` object.
+
+### initialize
+
+Make an `ardag` instance by loading an `arweave` and optional custom `post` function into `initialize`.
+
+```js
+import { initializeArDag } from '@douganderson444/ardag';
+import Arweave from 'arweave';
+
+const config = {}; // optional Arweave config
+const post = null; // optional custom arweave post() function override
+// const post = wallet.arweaveWalletAPI.dispatch; // or choose Bundlr dispatch instead of arweave.tranaction.post()
+const arweave = Arweave.init(config);
+
+const ardag = initializeArDag({ arweave, post });
+```
+
+### await ardag.persist(buffer)
+
+Once you've configured an ardag, saves a buffer to any object that implements the IPFS `DagAPI`. It returns the saved root CID.
+
+```js
+const rootCID = await ardag.persist(buffer);
+```
+
+### load()
+
+When you read an ArDag from Arweave and load it into a DAG, use load. During `load`, if there is no rootCID, `dag.rootCID` will be set to the first root CID loaded, which should be the latest buffer saved to Arweave. If there is already a rootCID nothing will be set and the root must be obtained by other means and manually set.
+
+```js
+import { createDagRepo } from '@douganderson444/ipld-car-txs';
+
+const dag = await createDagRepo({ path: 'optional-unique-path-name' }); // DagRepo = ipfs.DagAPI + a tx property from ipld-dag-txs
+const rootCID = await ardag.load({ dagOwner, dag });
+
+// now the dag has loaded the byte data from the owner's arweave ArDag
+const latestContactInfo = await dag.latest('ContactInfo');
+```
+
+### get(owner, tag)
+
+If you just need the owner's latest ArDag value but want to skip loading it into a local dag, just get the tag value.
+
+```js
+const dagOwner = 'S0MeArw3AveAddr35ss';
+const tag = 'phone';
+const latestTag = await ardag.get(dagOwner, tag);
+
+// or get everything
+const allLatest = await ardag.get(dagOwner);
+const phone = allLatest.phone;
+```
+
 ### import
 
 ```js
@@ -74,26 +128,6 @@ let currentNumber = (await myArDag.dag.get(dag.rootCID, { path: `/${tag}/obj/num
 
 const prevObj = (await myArDag.dag.get(dag.rootCID, { path: `/${tag}/prev/obj/number` })).value;
 ```
-
-### load()
-
-If you are only going to read an ArDag from an Arweave contract by loading it into your DAG, use load.
-
-```js
-import { createDagRepo } from '@douganderson444/ipld-car-txs';
-import * as ArDag from '@douganderson444/ardag';
-
-const ardag = ArDag.initializeArDag({ arweave, post });
-const dag = await createDagRepo({ path: 'optional-unique-path-name' }); // DagRepo = ipfs.DagAPI + a tx property from ipld-dag-txs
-await ardag.load({ dagOwner, dag, arweave });
-const latestPhone = await ardag.latest('phone');
-
-// advanced method via the dag data from my dag object
-const phoneNumber = (await dag.get(dag.rootCID, { path: 'contact/obj/phone' })).value;
-const oldPhoneNumber = (await dag.get(dag.rootCID, { path: 'contact/prev/obj/phone' })).value;
-```
-
-During `load`, `dag.rootCID` will be set to the first root CID loaded, which should be the latest buffer saved to Arweave.
 
 ## Demo/Tests
 
