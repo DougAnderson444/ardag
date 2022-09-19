@@ -2,15 +2,23 @@
 
 [Arweave](https://www.arweave.org/) - [Interplanetary Linked Data](https://ipld.io/) - [Directed Acyclic Graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph) Data.
 
-Save an IPLD DAG in Arweave, one transaction at a time. Minimizes data duplication in Arweave.
+Persist IPLD DAG transactions in Arweave, one transaction at a time. Minimizes data duplication in Arweave.
+
+This library is designed as a persistence plugin for `@douganderson444/ipld-car-txs` and should be used in conjuction with that library.
 
 ## API
 
-There are only 2 critical API for this library: `persist` and `load`. Persist saves a `dag` transaction buffer to Arweave, and `load` loads them from Arweave into a `dagAPI` object.
+There are 3 main API calls for this library: `persist`, `load`, and `get`. Persist saves a `dag` transaction buffer to Arweave, and `load` loads them from Arweave into a `dagAPI` object. Optionally, `get` just gets the latest value for a tag skipping any `dag` interaction.
 
-### initialize
+### import modules
 
-Make an `ardag` instance by loading an `arweave` and optional custom `post` function into `initialize`.
+```js
+import { initializeArDag } from '@douganderson444/ardag';
+```
+
+### initializeArDag({ arweave: Arweave, post?: Function })
+
+Configure `ardag` by loading an `arweave` and optional custom `post` function into `initialize`.
 
 ```js
 import { initializeArDag } from '@douganderson444/ardag';
@@ -24,57 +32,47 @@ const arweave = Arweave.init(config);
 const ardag = initializeArDag({ arweave, post });
 ```
 
-### await ardag.persist(buffer)
+Where Arweave client is mandatory, and `post` is an optional override function you can pass in to post uploads to Arweave. By default and for testing purposes, use `arweave.transaction.post`, and for Bundlr you'd use `wallet.arweaveAPI.dispatch` (when using [PeerPiper/web3-wallet-connector](https://github.com/PeerPiper/web3-wallet-connector)) or ArConnect's `.dispatch()` feature.
 
-Once you've configured an ardag, saves a buffer to any object that implements the IPFS `DagAPI`. It returns the saved root CID.
+### persist(buffer: Uint8Array)
+
+Once you've configured ArDag, save a buffer to Arweave.
 
 ```js
 const rootCID = await ardag.persist(buffer);
 ```
 
-### load()
+Dag transactions will be marked as `ArDag` Tags under this wallet address owner.
 
-When you read an ArDag from Arweave and load it into a DAG, use load. During `load`, if there is no rootCID, `dag.rootCID` will be set to the first root CID loaded, which should be the latest buffer saved to Arweave. If there is already a rootCID nothing will be set and the root must be obtained by other means and manually set.
+### load({ dagOwner: string, dag: DagRepo | DagAPI })
+
+Read an ArDag from Arweave and load it into a given DAG. During `load`, if there is no rootCID, `<DagRepo>.rootCID` will be set to the first root CID loaded, which should be the latest buffer saved to Arweave. If there is already a rootCID nothing will be set and the root must be obtained by other means and manually set.
 
 ```js
 import { createDagRepo } from '@douganderson444/ipld-car-txs';
 
 const dag = await createDagRepo({ path: 'optional-unique-path-name' }); // DagRepo = ipfs.DagAPI + a tx property from ipld-dag-txs
-const rootCID = await ardag.load({ dagOwner, dag });
+const address = await arweave.wallets.getAddress(wallet.jwk);
+const rootCID = await ardag.load({ dagOwner: address, dag });
 
 // now the dag has loaded the byte data from the owner's arweave ArDag
-const latestContactInfo = await dag.latest('ContactInfo');
+const tag = 'ContactInfo';
+const latestContactInfo = await dag.latest(tag);
 ```
 
-### get(owner, tag)
+### async get({ dagOwner: string, tag?: string | null })
 
-If you just need the owner's latest ArDag value but want to skip loading it into a local dag, just get the tag value.
+If you just need the owner's latest ArDag value but want to skip loading it into a local dag, just `get` the `tag` value.
 
 ```js
 const dagOwner = 'S0MeArw3AveAddr35ss';
 const tag = 'phone';
 const latestTag = await ardag.get(dagOwner, tag);
 
-// or get everything
-const allLatest = await ardag.get(dagOwner);
-const phone = allLatest.phone;
+// or get all tag keys
+const latestRootObj = await ardag.get(dagOwner);
+const tags = Object.keys(latestRootObj);
 ```
-
-### import
-
-```js
-import { initializeArDag, load } from '@douganderson444/ardag'
-// or
-import * as ArDag  from '@douganderson444/ardag'`
-```
-
-### initializeArDag
-
-```js
-const ardag = initializeArDag({ arweave: Arweave, post?: Function })
-```
-
-Where Arweave client is mandatory, and `post` is an optional override function you can pass in to post uploads to Arweave. By default and for testing purposes, use `arweave.transaction.post`, and for Bundlr you'd use `wallet.arweaveAPI.dispatch` (when using [PeerPiper/web3-wallet-connector](https://github.com/PeerPiper/web3-wallet-connector)) or ArConnect's `.dispatch()` feature.
 
 ### getInstance
 
