@@ -1,9 +1,6 @@
 import * as ArDag from '@douganderson444/ardag'; // this library
 import { createDagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
 import Arweave from 'arweave';
-import ArDB from 'ardb'; // access Arweave like a Database
-import type { ArdbTransaction } from 'ardb/lib/models/transaction';
-import { encodeURLSafe, decodeURLSafe } from '@stablelib/base64';
 
 // Bundlr access using dispatch
 // import { handlers as wallet, generateRsaJwk } from '@peerpiper/iframe-wallet-sdk';
@@ -74,13 +71,14 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 		post = wallet.arweaveWalletAPI.dispatch; // need to have browser open to approve confirmation if > 100kb
 	}
 
-	const ardb = new ArDB(arweave);
 	const dag = await createDagRepo({ path: 'original-dag' }); // make a barebones dag repo for fast loading
 
 	let tag = 'Mobile';
+	let tag2 = 'Landline';
 	let v1 = { number: '555-1234' };
 	let v2 = { number: '212-555-1234' };
 	let v3 = { number: '+1-212-555-1234' };
+	let v4 = { number: '+1-555-555-5555' };
 
 	const ardag = ArDag.initializeArDag({ arweave, post });
 
@@ -89,14 +87,25 @@ export async function tests(serverUrl?: string, logger?: object = defaultLogger)
 	const myArDag = await ardag.getInstance({ wallet: wallet.jwk, dag }); // has contractId and wallet properties
 
 	rootCID = await myArDag.save(tag, v1);
+	rootCID = await myArDag.save(tag2, v4);
 	rootCID = await myArDag.save(tag, v2);
+
+	// get address from jwk
+	const address = await arweave.wallets.getAddress(wallet.jwk);
+
+	// try shortcut
+	let latest = await ardag.get({ dagOwner: address, tag });
+	JSON.stringify(latest) == JSON.stringify(v2) ? console.log('Pass') : console.log('Fail');
+
+	// try deep nested value saved a while ago
+	let latest2 = await ardag.get({ dagOwner: address, tag: tag2 });
+	JSON.stringify(latest2) == JSON.stringify(v4) ? console.log('Pass') : console.log('Fail');
 
 	// now read the buffers from Arweave and load them into a new dag, see if they match
 	const rebuiltDag = await createDagRepo({ path: 'rebuiltDag' }); // make a barebones dag repo for fast loading
 
 	// load a Dag with existing data from contractId
-	// get address from jwk
-	const address = await arweave.wallets.getAddress(wallet.jwk);
+
 	await ardag.load({ dag: rebuiltDag, dagOwner: address });
 
 	const rebuiltPrev = (await rebuiltDag.get(rootCID, { path: `/${tag}/prev/obj/number` })).value;
