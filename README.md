@@ -6,7 +6,7 @@ Persist IPLD DAG transactions in Arweave, one transaction at a time. Minimizes d
 
 This library is designed as a persistence plugin for `@douganderson444/ipld-car-txs` and should be used in conjuction with that library.
 
-## API
+## Basic API
 
 There are 3 main API calls for this library: `persist`, `load`, and `get`. Persist saves a `dag` transaction buffer to Arweave, and `load` loads them from Arweave into a `dagAPI` object. Optionally, `get` just gets the latest value for a tag skipping any `dag` interaction.
 
@@ -74,6 +74,10 @@ const latestRootObj = await ardag.get(dagOwner);
 const tags = Object.keys(latestRootObj);
 ```
 
+## Integrated API
+
+The above API calls are intended for `ipld-car-txs` and `ardag` to be used separately. For convenience, they've also been integrated together in the below API through an "ArDag Instance".
+
 ### getInstance
 
 Once you've initialized an ArDag, you can use the client to make or get an instance:
@@ -106,7 +110,7 @@ let rootCID = await myArDag.save('Phone', { number: '555-1234' });
 
 This saves a `tag` key associated with any object to the root of the Dag. After save, `rootCID/tag/obj` will get `object`. Previously saved tags will be available at `rootCID/tag/prev/obj` and `rootCID/tag/prev/prev/obj` and so on down to the genesis version saved. Most of the time you will just want the latest object value, so use the following convenience function to get it:
 
-### instance.latest(tag)
+### instance.dag.latest(tag)
 
 Once you have ArDag data into your ArDag instance, you can get the latest tag info using the convenience function:
 
