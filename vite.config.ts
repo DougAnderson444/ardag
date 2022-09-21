@@ -14,10 +14,6 @@ const config: UserConfig = {
 			'@douganderson444/ardag': path.resolve('src/lib')
 		}
 	}
-	// optimizeDeps: {
-	// 	include: ['@douganderson444/ipld-car-txs']
-	// },
-	// ssr: { noExternal: ['@douganderson444/ipld-car-txs/**'] } // does the trick
 };
 
 export default config;

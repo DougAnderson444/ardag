@@ -1,6 +1,6 @@
 {
 	"name": "@douganderson444/ardag",
-	"version": "0.0.7",
+	"version": "0.0.8",
 	"main": "index.js",
 	"module": "index.js",
 	"scripts": {
@@ -36,7 +36,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@douganderson444/ipld-car-txs": "github:DougAnderson444/ipld-car-txs",
+		"@douganderson444/ipld-car-txs": "github:DougAnderson444/ipld-car-txs#afcd4f90759f3ad297f34050e1df1f71658cd9c2",
 		"@stablelib/base64": "^1.0.1",
 		"ardb": "^1.1.10",
 		"arweave": "^1.11.6",
