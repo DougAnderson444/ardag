@@ -1,5 +1,5 @@
 import { initializeArDag } from './index'; // this library
-import Arweave from 'arweave';
+import * as Arweave from 'arweave';
 
 let arweave;
 
