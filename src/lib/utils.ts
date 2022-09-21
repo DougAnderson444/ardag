@@ -1,5 +1,5 @@
 import { initializeArDag } from './index'; // this library
-import * as Arweave from 'arweave';
+import Arweave from 'arweave';
 
 let arweave;
 
@@ -38,7 +38,7 @@ export async function setup({
 	host = host.replace(`:${port}`, '') || 'localhost';
 	port = port || 443;
 	protocol = protocol.replace(':', '');
-	logger.log({ host, port, protocol });
+	logger.log({ host, port, protocol, Arweave });
 
 	if (dev) {
 		// Save this buffer as an Arweave Contract Transaction
