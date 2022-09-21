@@ -16,12 +16,17 @@ const AR_DAG = 'ArDag';
 /**
  * Persist only needs an Arweave client to work.
  */
-export async function persist({ buffer, arweave = null }) {
+export async function persist({ buffer = null, arweave = null, wallet = null }) {
 	if (!buffer) throw new Error('buffer is required');
 	if (!arweave) {
 		if (!this.arweave) throw new Error('Arweave is required');
 		arweave = this.arweave;
 	}
+	if (!wallet) {
+		if (this.wallet) wallet = this.wallet;
+	}
+	// else // will look for window.wallet
+
 	const { root: rootCID } = await Transaction.load(buffer);
 	const { cid: carCid } = await encode(buffer);
 
@@ -40,7 +45,7 @@ export async function persist({ buffer, arweave = null }) {
 		}
 	}
 	// post it to Arweave
-	await arweave.transactions.sign(tx, this.wallet);
+	await arweave.transactions.sign(tx, wallet);
 	await this.post(tx);
 	return rootCID;
 }
