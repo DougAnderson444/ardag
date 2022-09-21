@@ -8,9 +8,6 @@ import type { ArdbTransaction } from 'ardb/lib/models/transaction';
 import { encodeURLSafe, decodeURLSafe } from '@stablelib/base64';
 import type { IPFS } from 'ipfs-core-types';
 
-import defaultContractSrc from './contract/contractSrc.js?raw';
-import state from './contract/initial-state.json';
-
 const AR_DAG = 'ArDag';
 
 /**
