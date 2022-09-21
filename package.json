@@ -1,13 +1,13 @@
 {
 	"name": "@douganderson444/ardag",
 	"version": "0.0.7",
-	"private": true,
 	"main": "index.js",
 	"module": "index.js",
 	"scripts": {
 		"dev": "vite dev",
 		"dev:arlocal": "node ./startArlocal.js",
 		"build": "vite build",
+		"package": "svelte-package",
 		"preview": "vite preview",
 		"test": "playwright test",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -20,6 +20,7 @@
 		"@sveltejs/adapter-auto": "next",
 		"@sveltejs/adapter-static": "next",
 		"@sveltejs/kit": "next",
+		"@sveltejs/package": "^1.0.0-next.5",
 		"arlocal": "^1.1.56",
 		"autoprefixer": "^10.4.11",
 		"postcss": "^8.4.16",
