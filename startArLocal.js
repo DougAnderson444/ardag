@@ -11,6 +11,7 @@ export async function serveArLocal() {
 
 	async function toExit() {
 		if (arLocal) await arLocal.stop();
+		process.exit(0);
 	}
 
 	const p = await import('child_process');
