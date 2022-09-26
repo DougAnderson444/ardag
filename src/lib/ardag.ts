@@ -110,7 +110,9 @@ export async function get({ dagOwner, tag = null, arweave = null }) {
 
 	while (!latest && txs.length) {
 		const data = await arweave.transactions.getData(txs.shift().id);
+		if (!data) continue;
 		const buffer = new Uint8Array(decodeURLSafe(data));
+		if (!buffer) continue;
 		const { root, get } = await Transaction.load(buffer);
 		const rootNode = await get(root);
 
