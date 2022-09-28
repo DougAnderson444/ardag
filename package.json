@@ -1,6 +1,6 @@
 {
 	"name": "@douganderson444/ardag",
-	"version": "0.0.8",
+	"version": "0.0.9",
 	"main": "index.js",
 	"module": "index.js",
 	"scripts": {
@@ -8,6 +8,7 @@
 		"dev:arlocal": "node ./startArlocal.js",
 		"build": "vite build",
 		"package": "svelte-package",
+		"publish": "npm publish ./package --access public",
 		"preview": "vite preview",
 		"test": "playwright test",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -36,7 +37,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@douganderson444/ipld-car-txs": "github:DougAnderson444/ipld-car-txs#afcd4f90759f3ad297f34050e1df1f71658cd9c2",
+		"@douganderson444/ipld-car-txs": "^0.0.7",
 		"@stablelib/base64": "^1.0.1",
 		"ardb": "^1.1.10",
 		"arweave": "^1.11.6",

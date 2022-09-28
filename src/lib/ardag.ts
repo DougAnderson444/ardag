@@ -42,7 +42,7 @@ export async function persist({ buffer = null, arweave = null, wallet = null }) 
 		}
 	}
 	// post it to Arweave
-	await arweave.transactions.sign(tx, wallet);
+	await arweave.transactions.sign(tx, wallet); // TODO: if dispatch is used, sign happens twice
 	await this.post(tx);
 	return rootCID;
 }
@@ -105,6 +105,8 @@ export async function get({ dagOwner, tag = null, arweave = null }) {
 	const ardb = new ArDB(arweave);
 	const txs = await ardb.search('transactions').tags(searchTags).from(dagOwner).findAll();
 
+	if (!txs) return null;
+
 	let latest;
 	let latestCID;
 
@@ -132,7 +134,11 @@ export async function get({ dagOwner, tag = null, arweave = null }) {
 
 /**
  * Convenience function for (await arDagInst.dag.get(rootCID, { path: `/${tag}/obj` })).value;
+ * Needs to assure load has been done, and needs to work with multiDags.
  *
+ * TODO: Change to:
+ * rootCID = load(dagOwner)
+ * dag.get(rootCID, {path: `/${tag}/obj`})
  */
 export async function latest(tag: string) {
 	const res = await this.dag.get(this.rootCID, { path: `/${tag}/obj` });
