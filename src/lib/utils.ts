@@ -1,5 +1,4 @@
 import { initializeArDag } from './index'; // this library
-import Arweave from 'arweave';
 
 let arweave;
 
@@ -30,6 +29,9 @@ export async function setup({
 	serverUrl = 'http://localhost:1984',
 	logger = defaultLogger
 }) {
+	let Arweave = await import('arweave');
+	if (Arweave.default) Arweave = Arweave.default;
+
 	let post, wallet;
 
 	// destructure serverUrl up into host, port, protocol
