@@ -1,4 +1,3 @@
-import * as ArDag from './index'; // this library
 import { createDagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
 import Arweave from 'arweave';
 import { setup } from './utils';
