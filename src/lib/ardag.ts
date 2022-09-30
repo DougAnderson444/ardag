@@ -3,12 +3,15 @@ import type { JWKInterface } from 'arweave/node/lib/wallet';
 import type Transaction from 'arweave/node/lib/transaction';
 import { importBuffer, encode, Transaction } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
 import type { DagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
-import ArDB from 'ardb'; // access Arweave like a Database
+import * as ArDBMod from 'ardb'; // access Arweave like a Database
 import type { ArdbTransaction } from 'ardb/lib/models/transaction';
 import { encodeURLSafe, decodeURLSafe } from '@stablelib/base64';
 import type { IPFS } from 'ipfs-core-types';
 
 const AR_DAG = 'ArDag';
+console.log({ ArDBMod });
+let ArDB = ArDBMod?.default || ArDBMod; // stupid nodejs / vitejs hack
+ArDB = ArDB?.default || ArDB; // why does .default appear twice?!
 
 /**
  * Persist only needs an Arweave client to work.

@@ -1,6 +1,6 @@
 {
 	"name": "@douganderson444/ardag",
-	"version": "0.0.11",
+	"version": "0.0.13",
 	"main": "dist/ardag.js",
 	"module": "dist/ardag.js",
 	"scripts": {
@@ -39,7 +39,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@douganderson444/ipld-car-txs": "^0.0.11",
+		"@douganderson444/ipld-car-txs": "^0.0.12",
 		"@stablelib/base64": "^1.0.1",
 		"ardb": "^1.1.10",
 		"arweave": "^1.11.6",
