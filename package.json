@@ -1,13 +1,18 @@
 {
 	"name": "@douganderson444/ardag",
-	"version": "0.0.13",
+	"version": "0.0.14",
 	"main": "dist/ardag.js",
 	"module": "dist/ardag.js",
+	"exports": {
+		".": "./dist/ardag.js",
+		"./contractUtils": "./dist/contactUtils.js"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"dev:arlocal": "node ./startArlocal.js",
 		"build": "vite build",
 		"esbuild:ardag": "esbuild ./src/lib/ardag.js --bundle --minify --sourcemap --format=esm --main-fields=browser,module,main --inject:./src/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --outdir=./dist",
+		"esbuild:utils": "esbuild ./src/lib/contract/contractUtils.js --bundle --minify --sourcemap --format=esm --main-fields=browser,module,main --inject:./src/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --outdir=./dist",
 		"package": "svelte-package",
 		"publish": "npm publish --access public",
 		"preview": "vite preview",
