@@ -1,6 +1,6 @@
 import { describe, it, assert, expect, test, beforeAll, afterAll } from 'vitest';
 import { createDagRepo, DagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
-import { setup } from '$lib/utils';
+import { setup } from './utils';
 import ArLocal from 'arlocal';
 
 describe('Integrated ardag', () => {
@@ -42,6 +42,9 @@ describe('Integrated ardag', () => {
 	});
 
 	it('should create an ardag instance', async () => {
+		// expect wallet.jwk toBeTruthy
+		expect(wallet.jwk).toBeTruthy();
+
 		myArDag = await ardag.getInstance({ dag, wallet: wallet.jwk });
 		// expect myArDag  to have arweave, post, getInstance, get, and load properties
 		expect(myArDag).toHaveProperty('arweave');
