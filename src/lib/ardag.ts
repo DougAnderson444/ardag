@@ -9,7 +9,6 @@ import { encodeURLSafe, decodeURLSafe } from '@stablelib/base64';
 import type { IPFS } from 'ipfs-core-types';
 
 const AR_DAG = 'ArDag';
-console.log({ ArDBMod });
 let ArDB = ArDBMod?.default || ArDBMod; // stupid nodejs / vitejs hack
 ArDB = ArDB?.default || ArDB; // why does .default appear twice?!
 
@@ -101,8 +100,18 @@ export async function load({
 export async function get({ dagOwner, tag = null, arweave = null }) {
 	if (!dagOwner) throw new Error('dagOwner is required');
 	if (!arweave) {
-		if (!this.arweave) throw new Error('Arweave is required');
-		arweave = this.arweave;
+		if (!this.arweave) {
+			const Arweave = require('arweave').default;
+			arweave = Arweave.init({
+				host: 'arweave.net',
+				port: 443,
+				protocol: 'https',
+				timeout: 20000,
+				logging: false
+			});
+		} else {
+			arweave = this.arweave;
+		}
 	}
 	const searchTags = [{ name: 'App-Name', values: [AR_DAG] }];
 	const ardb = new ArDB(arweave);
