@@ -18,7 +18,8 @@ const config: UserConfig = {
 		deps: {
 			inline: ['@douganderson444/ipld-car-txs']
 		},
-		hookTimeout: 60000
+		hookTimeout: 60000,
+		testTimeout: 60000
 	}
 };
 
