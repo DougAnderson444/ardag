@@ -80,9 +80,8 @@ export async function load({
 		// const parsed = JSON.parse(tx.tags.find((el) => el.name === 'Input').value);
 		// const txid = parsed.ardagtxid;
 		try {
-			const data = await arweave.transactions.getData(tx.id);
-			const buffer = new Uint8Array(decodeURLSafe(data));
-			const cid = await importBuffer(dag, buffer); // as many as you need
+			const data: Uint8Array = await getData({ arweave, txid: tx.id });
+			const cid = await importBuffer(dag, data); // as many as you need
 			if (!rootCID) rootCID = cid; // return latest rootCID
 			if (dag.hasOwnProperty('rootCID') && !dag?.rootCID) dag.rootCID = cid; // make the most recent rootCID this rootCID
 		} catch (error) {
@@ -123,11 +122,16 @@ export async function get({ dagOwner, tag = null, arweave = null }) {
 	let latestCID;
 
 	while (!latest && txs.length) {
-		const data = await arweave.transactions.getData(txs.shift().id);
-		if (!data) continue;
-		const buffer = new Uint8Array(decodeURLSafe(data));
-		if (!buffer) continue;
-		const { root, get } = await Transaction.load(buffer);
+		let data: Uint8Array | undefined;
+		let txid = txs.shift().id;
+		try {
+			data = await getData({ arweave, txid });
+		} catch (error) {
+			console.log('get Data txid failed', { txid }, error);
+			if (!data) continue;
+		}
+
+		const { root, get } = await Transaction.load(data);
 		const rootNode = await get(root);
 
 		if (!tag) return rootNode;
@@ -202,9 +206,26 @@ export function initializeArDag({ arweave, post = null }: { arweave: Arweave; po
 	return {
 		arweave,
 		post: post || boundPost,
+		getData,
 		getInstance,
 		persist,
 		get,
 		load // this.load is required in getInstance
 	};
+}
+
+export async function getData({ arweave = null, txid }): Promise<Uint8Array> {
+	if (!txid) throw new Error('txid is required');
+	if (!arweave) {
+		if (!this.arweave) throw new Error('Arweave is required');
+		arweave = this.arweave;
+	}
+	try {
+		let result = await arweave.api.get(`/${txid}`, { responseType: 'arraybuffer' });
+		if (result.status >= 200 && result.status < 300) {
+			return Uint8Array.from(result.data);
+		}
+	} catch (error) {
+		console.log('get Data failed', { txid }, error);
+	}
 }
