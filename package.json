@@ -1,10 +1,10 @@
 {
 	"name": "@douganderson444/ardag",
-	"version": "0.0.14",
-	"main": "dist/ardag.js",
-	"module": "dist/ardag.js",
+	"version": "0.0.16",
+	"main": "index.js",
+	"module": "index.js",
 	"exports": {
-		".": "./dist/ardag.js",
+		".": "./index.js",
 		"./contractUtils": "./dist/contactUtils.js"
 	},
 	"scripts": {
@@ -15,7 +15,7 @@
 		"esbuild:ardag": "esbuild ./src/lib/ardag.js --bundle --minify --sourcemap --format=esm --main-fields=browser,module,main --inject:./src/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --outdir=./dist",
 		"esbuild:utils": "esbuild ./src/lib/contract/contractUtils.js --bundle --minify --sourcemap --format=esm --main-fields=browser,module,main --inject:./src/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --outdir=./dist",
 		"package": "svelte-package",
-		"publish": "npm publish --access public",
+		"npm:publish": "npm publish ./package --access public",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -45,7 +45,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@douganderson444/ipld-car-txs": "^0.0.19",
+		"@douganderson444/ipld-car-txs": "^0.0.21",
 		"@stablelib/base64": "^1.0.1",
 		"ardb": "^1.1.10",
 		"arweave": "^1.11.6",
