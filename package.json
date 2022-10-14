@@ -11,12 +11,12 @@
 		"dev": "vite dev",
 		"dev:arlocal": "node ./startArlocal.js",
 		"build": "vite build",
+		"test": "vitest",
 		"esbuild:ardag": "esbuild ./src/lib/ardag.js --bundle --minify --sourcemap --format=esm --main-fields=browser,module,main --inject:./src/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --outdir=./dist",
 		"esbuild:utils": "esbuild ./src/lib/contract/contractUtils.js --bundle --minify --sourcemap --format=esm --main-fields=browser,module,main --inject:./src/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --outdir=./dist",
 		"package": "svelte-package",
 		"publish": "npm publish --access public",
 		"preview": "vite preview",
-		"test": "playwright test",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check .",
@@ -40,11 +40,12 @@
 		"tailwindcss": "^3.1.8",
 		"tslib": "^2.3.1",
 		"typescript": "^4.7.4",
-		"vite": "^3.1.0"
+		"vite": "^3.1.0",
+		"vitest": "^0.24.3"
 	},
 	"type": "module",
 	"dependencies": {
-		"@douganderson444/ipld-car-txs": "^0.0.12",
+		"@douganderson444/ipld-car-txs": "^0.0.19",
 		"@stablelib/base64": "^1.0.1",
 		"ardb": "^1.1.10",
 		"arweave": "^1.11.6",
