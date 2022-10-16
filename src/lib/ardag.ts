@@ -223,7 +223,7 @@ export async function getData({ arweave = null, txid }): Promise<Uint8Array> {
 	try {
 		let result = await arweave.api.get(`/${txid}`, { responseType: 'arraybuffer' });
 		if (result.status >= 200 && result.status < 300) {
-			return Uint8Array.from(result.data);
+			return new Uint8Array(result.data);
 		}
 	} catch (error) {
 		console.log('get Data failed', { txid }, error);
