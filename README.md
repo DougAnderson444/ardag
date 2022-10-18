@@ -110,7 +110,7 @@ let rootCID = await myArDag.save('Phone', { number: '555-1234' });
 
 This saves a `tag` key associated with any object to the root of the Dag. After save, `rootCID/tag/obj` will get `object`. Previously saved tags will be available at `rootCID/tag/prev/obj` and `rootCID/tag/prev/prev/obj` and so on down to the genesis version saved. Most of the time you will just want the latest object value, so use the following convenience function to get it:
 
-### instance.dag.latest(tag)
+### instance.latest(tag)
 
 Once you have ArDag data into your ArDag instance, you can get the latest tag info using the convenience function:
 
