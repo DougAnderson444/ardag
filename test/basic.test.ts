@@ -105,4 +105,17 @@ describe('Integrated ardag', () => {
 		const rcLatest = await myNewArDag.latest(tag);
 		expect(rcLatest.number).toEqual(v3.number);
 	});
+
+	it('should load someone elses ArDag too', async () => {
+		const newDag = await createDagRepo({ path: 'reloaded-dag' });
+		// const dagOwner = await ardag.arweave.wallets.getAddress(wallet.jwk);
+		const theirArDag = await ardag.getInstance({
+			dagOwner: address, // use the Arweave address
+			dag: newDag // use a new dag repo to show that all transactions have been imported fresh
+		});
+
+		const latest = await theirArDag.latest(tag);
+		// expect latest to be v3
+		expect(latest).toEqual(v3);
+	});
 });
