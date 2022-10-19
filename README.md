@@ -119,7 +119,7 @@ const latestPhone = await myArDag.latest('Phone');
 console.log(latestPhone.number); // 555-1234
 ```
 
-### instance.dag.get(cid, {path: '/tag/obj/path/to/value})
+### instance.get({cid, tag: string; })
 
 The advanced way to then get the latest data from your writable instance is to use the `dag` property + the `path` to get the value. This is the same as `ipfs.dag`, with the object being under the `obj` key, and previous version being under the `prev/obj` or `prev/prev/obj` or `prev/prev/prev/obj` key.
 
