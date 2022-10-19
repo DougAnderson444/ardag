@@ -55,7 +55,7 @@ export async function load({
 	dag,
 	arweave = null
 }: {
-	dagOwner: string;
+	dagOwner: string; // has to be the Arweave address
 	dag: DagRepo | DagAPI;
 	arweave?: Arweave;
 }) {
@@ -174,7 +174,9 @@ export async function getInstance({
 	if (!dagOwner) {
 		// dagOwner is sha256 hash of wallet public key
 		dagOwner = await this.arweave.wallets.jwkToAddress(wallet);
-	} else await this.load({ dag, dagOwner });
+	} else {
+		this.rootCID = await this.load({ dag, dagOwner });
+	}
 
 	return {
 		arweave: this.arweave, // inherit this from parent object
