@@ -67,10 +67,10 @@ If you just need the owner's latest ArDag value but want to skip loading it into
 ```js
 const dagOwner = 'S0MeArw3AveAddr35ss';
 const tag = 'phone';
-const latestTag = await ardag.get(dagOwner, tag);
+const latestTag = await ardag.get({ dagOwner, tag });
 
 // or get all tag keys
-const latestRootObj = await ardag.get(dagOwner);
+const latestRootObj = await ardag.get({ dagOwner });
 const tags = Object.keys(latestRootObj);
 ```
 
