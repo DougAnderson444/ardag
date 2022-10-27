@@ -1,8 +1,11 @@
 {
 	"name": "@douganderson444/ardag",
-	"version": "0.0.20",
+	"version": "0.0.21",
 	"main": "index.js",
 	"module": "index.js",
+	"bin": {
+		"ardag-deploy": "./deploy.js"
+	},
 	"exports": {
 		".": "./index.js",
 		"./contractUtils": "./dist/contactUtils.js"
@@ -14,6 +17,7 @@
 		"test": "vitest",
 		"esbuild:ardag": "esbuild ./src/lib/ardag.js --bundle --minify --sourcemap --format=esm --main-fields=browser,module,main --inject:./src/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --outdir=./dist",
 		"esbuild:utils": "esbuild ./src/lib/contract/contractUtils.js --bundle --minify --sourcemap --format=esm --main-fields=browser,module,main --inject:./src/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --outdir=./dist",
+		"prepare": "ts-patch install -s",
 		"package": "svelte-package",
 		"npm:publish": "npm publish ./package --access public",
 		"preview": "vite preview",
@@ -30,7 +34,8 @@
 		"@sveltejs/package": "^1.0.0-next.5",
 		"arlocal": "^1.1.56",
 		"autoprefixer": "^10.4.11",
-		"esbuild": "^0.15.10",
+		"dotenv": "^16.0.3",
+		"esbuild": "^0.15.12",
 		"postcss": "^8.4.16",
 		"prettier": "^2.6.2",
 		"prettier-plugin-svelte": "^2.7.0",
@@ -38,17 +43,23 @@
 		"svelte-check": "^2.7.1",
 		"svelte-preprocess": "^4.10.7",
 		"tailwindcss": "^3.1.8",
+		"ts-patch": "^2.0.2",
 		"tslib": "^2.3.1",
 		"typescript": "^4.7.4",
+		"typescript-transform-extensions": "^1.0.1",
 		"vite": "^3.1.0",
-		"vitest": "^0.24.3"
+		"vitest": "^0.24.3",
+		"yargs": "^17.6.0"
 	},
 	"type": "module",
 	"dependencies": {
+		"@bundlr-network/client": "^0.8.9",
 		"@douganderson444/ipld-car-txs": "^0.0.22",
 		"@stablelib/base64": "^1.0.1",
+		"arbundles": "^0.6.21",
 		"ardb": "^1.1.10",
 		"arweave": "^1.11.6",
+		"axios": "^1.1.3",
 		"ipfs-core-types": "^0.12.0"
 	}
 }
