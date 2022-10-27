@@ -11,7 +11,7 @@ const config: UserConfig = {
 	},
 	resolve: {
 		alias: {
-			'@douganderson444/ardag': path.resolve('./')
+			'@douganderson444/ardag': path.resolve('./src/lib')
 		}
 	},
 	test: {
