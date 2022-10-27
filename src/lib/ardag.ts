@@ -15,7 +15,7 @@ ArDB = ArDB?.default || ArDB; // why does .default appear twice?!
 /**
  * Persist only needs an Arweave client to work.
  */
-export async function persist({ buffer = null, arweave = null, wallet = null }) {
+export async function persist({ buffer = null, arweave = null, wallet = null, tags = [] }) {
 	if (!buffer) throw new Error('buffer is required');
 	if (!arweave) {
 		if (!this.arweave) throw new Error('Arweave is required');
@@ -32,11 +32,9 @@ export async function persist({ buffer = null, arweave = null, wallet = null }) 
 	// create an Arweave data transaction
 	let tx = await arweave.createTransaction({ data: buffer });
 
-	const tags = [
-		{ name: 'App-Name', value: [AR_DAG] },
-		{ name: 'Root-CID', value: [rootCID.toString()] },
-		{ name: 'CAR-CID', value: [carCid.toString()] }
-	];
+	tags.push({ name: 'App-Name', value: [AR_DAG] });
+	tags.push({ name: 'Root-CID', value: [rootCID.toString()] });
+	tags.push({ name: 'CAR-CID', value: [carCid.toString()] });
 
 	if (tags && tags.length) {
 		for (const tag of tags) {
@@ -188,11 +186,11 @@ export async function getInstance({
 		rootCID: this.rootCID || null,
 		latest,
 		persist,
-		async save(tag: string, obj: object) {
+		async save(tag: string, obj: object, { tags } = { tags: [] }) {
 			const rootCID = await this.dag.tx.add(tag, obj);
 			this.rootCID = rootCID;
 			const buffer = await this.dag.tx.commit();
-			const r = await this.persist({ buffer });
+			const r = await this.persist({ buffer, tags });
 			return rootCID;
 		}
 	};
