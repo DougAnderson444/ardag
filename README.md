@@ -131,6 +131,40 @@ let currentNumber = (await myArDag.dag.get(dag.rootCID, { path: `/${tag}/obj/num
 const prevObj = (await myArDag.dag.get(dag.rootCID, { path: `/${tag}/prev/obj/number` })).value;
 ```
 
+## Command Line Interface (CLI)
+
+You can also save simple objects to your ArDag through the cli.
+
+First, globally install the package:
+
+```
+npm install -g @douganderson444/ardag
+```
+
+Then run `ardag-deploy` with your `tag` name and `esModule` path along with the path of your arweave jwk file. It will `save(tag, {esModule})` to your ArDag under your arweave address.
+
+```cli
+$ ardag-deploy --tag Web3-Wallet-Connector --obj.esModule=../path/to/es/mod.js --obj.meta=../path/to/meta.json --jwk=../my-keyfile.json --local
+```
+
+CLI Options
+
+```
+Command
+
+ardag-deploy [args]
+
+Required args
+--tag							The key value of the tag
+--obj							The object key(s) you want to save to the Tag, --obj.key1=/path/to/key1
+--jwk							JSON file with Arweave json web token private key in it
+
+Options
+--overwrite						Only saves the current --obj.* and discards any previous tag value
+--local 						Use arlocal
+--local="http:localhost:1234 	Set the url for local server
+```
+
 ## Demo/Tests
 
 Full experiments located in `./src/lib/tests.ts`
