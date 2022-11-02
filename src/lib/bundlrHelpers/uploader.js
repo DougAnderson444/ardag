@@ -15,8 +15,6 @@ export async function uploadDataToBundlr(dataItem) {
 		maxBodyLength: Infinity
 	});
 
-	console.log('uploadDataToBundlr', { res });
-
 	if (res.status >= 400)
 		throw new Error(`Error uploading DataItem: ${res.status} ${res.statusText}`);
 }
