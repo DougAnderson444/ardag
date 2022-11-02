@@ -1,6 +1,6 @@
 {
 	"name": "@douganderson444/ardag",
-	"version": "0.0.21",
+	"version": "0.0.22",
 	"main": "index.js",
 	"module": "index.js",
 	"bin": {
@@ -54,6 +54,7 @@
 	"type": "module",
 	"dependencies": {
 		"@bundlr-network/client": "^0.8.9",
+		"@douganderson444/bundlr-helper": "github:douganderson444/bundlr-helper#601d2ae32e5ce5fe1e3b58d92b26759d62d0f5da",
 		"@douganderson444/ipld-car-txs": "^0.0.22",
 		"@stablelib/base64": "^1.0.1",
 		"arbundles": "^0.6.21",
