@@ -133,7 +133,7 @@ const prevObj = (await myArDag.dag.get(dag.rootCID, { path: `/${tag}/prev/obj/nu
 
 ## Command Line Interface (CLI)
 
-You can also save simple objects to your ArDag through the cli.
+You can also save data to your ArDag through the cli using a `ardag.config.js` file.
 
 First, globally install the package:
 
@@ -141,10 +141,47 @@ First, globally install the package:
 npm install -g @douganderson444/ardag
 ```
 
-Then run `ardag-deploy` with your `tag` name and `esModule` path along with the path of your arweave jwk file. It will `save(tag, {esModule})` to your ArDag under your arweave address.
+Then configure an ardag config file
+
+```js
+export const config = {
+	jwk: {
+		path: process.env.JWK_FILE_PATH // Required, arweave jwk file path to use to save to ArDag
+	},
+	overwrite: false, // Default is false to add onto the previous data
+	tag: 'PeerPiper-Web3-Wallet-Connector', // Tag Label for the object
+	// The object to be pushed to the dag:
+	obj: {
+		compiled: {
+			path: './src/lib/bundled/es/Web3WalletMenu.svelte.js' // any obj.key with a path will be read from the fs and saved as file bytes
+		},
+		components: {
+			// Optionally also upload the source files uncompiled
+		},
+		meta: {
+			package: packageJson.name,
+			version: packageJson.version,
+			url: packageJson.homepage,
+			title: 'Web3WalletMenu',
+			author: 'douganderson444.ar',
+			visible: true // whether to list this in the owner's menu of DApps
+		},
+		thumbnail: {
+			path: 'static/thumbnail.png'
+		},
+		data: {
+			// this is my preferences when using the app, it's "My data"
+			url: 'https://peerpiper.github.io/iframe-wallet-sdk/'
+		}
+		// Any other user defined object keys you want
+	}
+};
+```
+
+When the `ardag-deploy` command is run, ArDag will read the config file and save the data to the Dag. Anything that is a `path` is read from the filesystem and converted to a CID, if the CID is unchanged from the latest value, the data is deduplicated so you don't upload data that is already there.
 
 ```cli
-$ ardag-deploy --tag Web3-Wallet-Connector --obj.esModule=../path/to/es/mod.js --obj.meta=../path/to/meta.json --jwk=../my-keyfile.json --local
+$ ardag-deploy --local
 ```
 
 CLI Options
@@ -152,17 +189,13 @@ CLI Options
 ```
 Command
 
-ardag-deploy [args]
+ardag-deploy [options]
 
-Required args
---tag							The key value of the tag
---obj							The object key(s) you want to save to the Tag, --obj.key1=/path/to/key1
---jwk							JSON file with Arweave json web token private key in it
 
 Options
---overwrite						Only saves the current --obj.* and discards any previous tag value
---local 						Use arlocal
---local="http:localhost:1234 	Set the url for local server
+--overwrite					Only saves the current --obj.* and discards any previous tag value
+--local 					Use arlocal
+--local=http:localhost:1234	Set the url for local server
 ```
 
 ## Demo/Tests

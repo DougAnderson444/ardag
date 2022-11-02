@@ -24,38 +24,44 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import * as dotenv from 'dotenv'; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+import { readyBundlr } from '@douganderson444/bundlr-helper';
 
 dotenv.config(); //load from .env
 
 const argv = yargs(hideBin(process.argv)).argv;
 
 const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Get tag and esModule from cli args?
  * Create a repo
- * Fill it with the JWK address's ArDag
+ * Fill it with the JWK's ArDag
  * Update/Add the given tag
  * Fin.
  */
 
 (async () => {
-	if (!argv.tag || !argv.obj || !argv.jwk) {
-		console.log('Please supply --tag, --obj, and --jwk args');
+	// read the ardag.config.js file
+	const configPath = path.relative(__dirname, './ardag.config.js');
+
+	// import configPath as es module
+	const { config } = await import(`./${configPath}`);
+
+	// if config doesn't exist, print an error and exit
+	if (!config) {
+		console.error('ardag.config.js not found');
+		process.exit(1);
 		return;
 	}
 
-	let values = {};
-	// for each argv.obj read file sync and save result to a variable
-	for (const [key, file] of Object.entries(argv.obj)) {
-		console.log('Reading ', file);
-		const value = fs.readFileSync(file, 'utf8');
-		values[key] = value;
+	if (!config?.tag || !config?.obj || !config?.jwk) {
+		console.log('Please supply a tag, obj, and jwk to use ArDag');
+		process.exit(0);
+		return;
 	}
 
-	console.log('Read: ', values);
-
-	const jwk = JSON.parse(fs.readFileSync(argv.jwk, 'utf8'));
+	const jwk = JSON.parse(fs.readFileSync(config.jwk.path, 'utf8'));
 
 	let url = argv?.local
 		? typeof argv?.local === 'string'
@@ -71,13 +77,12 @@ const __filename = fileURLToPath(import.meta.url);
 		logging: false
 	});
 
-	console.log('config', arweave.api.config);
-	const address = await arweave.wallets.jwkToAddress(jwk);
+	const dagOwner = await arweave.wallets.jwkToAddress(jwk);
 
 	if (argv?.local) {
-		// async await faucet to the jwk address
-		console.log('fauceting', address);
-		const response = await arweave.api.get(`/mint/${address}/1000000000000`);
+		// async await faucet to the jwk
+		console.log('fauceting', dagOwner);
+		const response = await arweave.api.get(`/mint/${dagOwner}/1000000000000`);
 		await arweave.api.get('mine');
 		// console.log('response', response);
 	}
@@ -91,11 +96,57 @@ const __filename = fileURLToPath(import.meta.url);
 	});
 
 	// add on to the existing stuff?
-	const latest = await ardag.get({ dagOwner: address, tag: argv.tag });
-
-	const value = argv.overwrite ? values : Object.assign({}, latest, values);
+	let latest = null;
+	try {
+		latest = await ardag.get({ dagOwner, tag: config.tag });
+	} catch (error) {
+		// that's fine
+	}
 
 	const instance = await ardag.getInstance({ dag, wallet: jwk });
-	const rootCID = await instance.save(argv.tag, value);
-	console.log('Saved ', argv.tag, ' to ', address);
+
+	let tagNode = {};
+	// for each config.obj read file sync and save result to a variable
+	for (const [key, val] of Object.entries(config.obj)) {
+		// if the val has a path property, then read from that path as file
+		if (val.path) {
+			// console.log('Reading ', val.path);
+
+			const file = fs.readFileSync(path.resolve(process.cwd(), val.path), 'utf8');
+
+			// add to DAG, get CID
+			const dataCid = await instance.dag.tx.pending.add({ value: file });
+
+			// console.log('latest', latest);
+			// check if latest is the same cid as dataCid
+			if (latest && latest[key]?.value.toString() === dataCid.toString()) {
+				// dedupe actualy content, just keep the cid for ref
+				console.log('Deduping', key, dataCid.toString());
+				instance.dag.tx.pending.undo();
+			}
+
+			tagNode[key] = { value: dataCid };
+		} else {
+			// console.log('Using ', val);
+			tagNode[key] = val;
+		}
+	}
+
+	tagNode.dappowner = dagOwner; // so consumers know which ArDag to find the dapp content if it's linked form somewhere else
+
+	console.log('Read: ', tagNode);
+
+	const value = config.overwrite && latest ? tagNode : Object.assign({}, latest, tagNode);
+
+	// when non local, ensure Bundlr can cover the upload of > 100 kb
+	if (!argv?.local) {
+		const isReady = await readyBundlr(instance.dag.tx.pending.size, jwk);
+
+		if (!isReady) {
+			console.log('Save aborted');
+			return;
+		}
+	}
+	const rootCID = await instance.save(config.tag, value);
+	console.log('Saved ', config.tag, ' to ', dagOwner);
 })();
