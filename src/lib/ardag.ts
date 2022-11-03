@@ -23,8 +23,8 @@ export async function persist({ buffer = null, arweave = null, wallet = null, ta
 	}
 	if (!wallet) {
 		if (this.wallet) wallet = this.wallet;
+		// else, still ok if it's null b/c we will 'use_wallet' from window object in the browser
 	}
-	// else // will look for window.wallet
 
 	const { root: rootCID } = await Transaction.load(buffer);
 	const { cid: carCid } = await encode(buffer);
