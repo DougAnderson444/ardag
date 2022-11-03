@@ -94,6 +94,10 @@ Where `dag` is a required `type DagRepo` from [@douganderson444/ipld-car-txs](ht
 
 Where `wallet` is an Arweave `JWKInterface`, defaults to the string `use_wallet`. If no `JWK` is specified, ArDag will look for a `arweavewallet` on the `window` oject (see [PeerPiper/web3-wallet-connector](https://github.com/PeerPiper/web3-wallet-connector) to make one in 4 lines of code)
 
+Specifying a `dagOwner` will extend an existing DAG.
+
+⚠️ If you write to an existing DAG _without_ specifying `dagOwner` it will make a gap in the DAG, effectively starting a new one. The latest Root CID will no longer have a connection to previous roots, and the DAG is considered ended. The data still exists and will be loaded and thus this new Graph can be relinked to the previous CIDs with the `tag` again, but it will require some custom code and is not a part of this library (yet?).
+
 ### instance.save()
 
 Once you have an instance initialized and made, you can save data to it. Save an object with a label called `tag`:
