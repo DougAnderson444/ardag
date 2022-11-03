@@ -103,7 +103,11 @@ const __dirname = path.dirname(__filename);
 		// that's fine
 	}
 
-	const instance = await ardag.getInstance({ dag, wallet: jwk });
+	const instance = await ardag.getInstance({
+		dagOwner, // load previous DAG so we can add onto it
+		dag, // load data into this dag object
+		wallet: jwk // gives us write ability on this dag
+	});
 
 	let tagNode = {};
 	// for each config.obj read file sync and save result to a variable
@@ -118,7 +122,7 @@ const __dirname = path.dirname(__filename);
 			const dataCid = await instance.dag.tx.pending.add({ value: file });
 
 			// check if latest is the same cid as dataCid
-			if (latest && latest[key]?.value.toString() === dataCid.toString()) {
+			if (latest && latest[key]?.toString() === dataCid.toString()) {
 				// dedupe actualy content, just keep the cid for ref
 				console.log('Deduping', key, dataCid.toString());
 				instance.dag.tx.pending.undo();
