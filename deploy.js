@@ -117,7 +117,6 @@ const __dirname = path.dirname(__filename);
 			// add to DAG, get CID
 			const dataCid = await instance.dag.tx.pending.add({ value: file });
 
-			// console.log('latest', latest);
 			// check if latest is the same cid as dataCid
 			if (latest && latest[key]?.value.toString() === dataCid.toString()) {
 				// dedupe actualy content, just keep the cid for ref
@@ -125,7 +124,7 @@ const __dirname = path.dirname(__filename);
 				instance.dag.tx.pending.undo();
 			}
 
-			tagNode[key] = { value: dataCid };
+			tagNode[key] = dataCid;
 		} else {
 			// console.log('Using ', val);
 			tagNode[key] = val;
