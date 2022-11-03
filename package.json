@@ -57,8 +57,8 @@
 		"@douganderson444/bundlr-helper": "github:douganderson444/bundlr-helper#601d2ae32e5ce5fe1e3b58d92b26759d62d0f5da",
 		"@douganderson444/ipld-car-txs": "^0.0.22",
 		"@stablelib/base64": "^1.0.1",
+		"ar-gql": "github:DougAnderson444/arGQL",
 		"arbundles": "^0.6.21",
-		"ardb": "^1.1.10",
 		"arweave": "^1.11.6",
 		"axios": "^1.1.3",
 		"ipfs-core-types": "^0.12.0"

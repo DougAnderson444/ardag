@@ -3,14 +3,11 @@ import type { JWKInterface } from 'arweave/node/lib/wallet';
 import type Transaction from 'arweave/node/lib/transaction';
 import { importBuffer, encode, Transaction } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
 import type { DagRepo } from '@douganderson444/ipld-car-txs'; // build ipld one tx at a time
-import * as ArDBMod from 'ardb'; // access Arweave like a Database
-import type { ArdbTransaction } from 'ardb/lib/models/transaction';
 import { encodeURLSafe, decodeURLSafe } from '@stablelib/base64';
 import type { IPFS } from 'ipfs-core-types';
+import { getOwnerArDag } from './utils';
 
 const AR_DAG = 'ArDag';
-let ArDB = ArDBMod?.default || ArDBMod; // stupid nodejs / vitejs hack
-ArDB = ArDB?.default || ArDB; // why does .default appear twice?!
 
 /**
  * Persist only needs an Arweave client to work.
@@ -69,12 +66,16 @@ export async function load({
 	// load buffer from Contract transactions
 	const searchTags = [{ name: 'App-Name', values: [AR_DAG] }];
 
-	const ardb = new ArDB(arweave);
-	const txs = await ardb.search('transactions').tags(searchTags).from(dagOwner).findAll();
+	let txs = null;
+	try {
+		txs = await getOwnerArDag({ arweave, searchTags, dagOwner });
+	} catch (error) {
+		console.log('ArDag get failed', error);
+	}
 
 	let rootCID;
 
-	const importer = async (dag: IPFS['dag'], tx: ArdbTransaction) => {
+	const importer = async (dag: IPFS['dag'], tx) => {
 		// const parsed = JSON.parse(tx.tags.find((el) => el.name === 'Input').value);
 		// const txid = parsed.ardagtxid;
 		try {
@@ -111,8 +112,13 @@ export async function get({ dagOwner, tag = null, arweave = null }) {
 		}
 	}
 	const searchTags = [{ name: 'App-Name', values: [AR_DAG] }];
-	const ardb = new ArDB(arweave);
-	const txs = await ardb.search('transactions').tags(searchTags).from(dagOwner).findAll();
+
+	let txs = null;
+	try {
+		txs = await getOwnerArDag({ arweave, searchTags, dagOwner });
+	} catch (error) {
+		console.log('ArDag get failed', error);
+	}
 
 	if (!txs) return null;
 
