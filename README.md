@@ -60,7 +60,7 @@ const tag = 'ContactInfo';
 const latestContactInfo = await dag.latest(tag);
 ```
 
-### async get({ dagOwner: string, tag?: string | null })
+### async get({ dagOwner: string, tag?: string | null, arweave?: null | Arweave, cid?: null | CID })
 
 If you just need the owner's latest ArDag value but want to skip loading it into a local dag, just `get` the `tag` value.
 
@@ -73,6 +73,18 @@ const latestTag = await ardag.get({ dagOwner, tag });
 const latestRootObj = await ardag.get({ dagOwner });
 const tags = Object.keys(latestRootObj);
 ```
+
+You can also use `get` to resolve a CID from an owner's ArDAG without specifying a tag:
+
+```js
+// or get all tag keys
+const latestRootObj = await ardag.get({ dagOwner });
+
+// ... get a cid from somewhere in their IPLD Dag
+const someValue = await ardag.get({ dagOwner, cid });
+```
+
+If you specify a `cid` to get, that will take precedence over the `tag` and the `tag` will be ignored.
 
 ## Integrated API
 

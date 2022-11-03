@@ -95,7 +95,7 @@ export async function load({
 	return rootCID;
 }
 
-export async function get({ dagOwner, tag = null, arweave = null }) {
+export async function get({ dagOwner, tag = null, arweave = null, cid = null }) {
 	if (!dagOwner) throw new Error('dagOwner is required');
 	if (!arweave) {
 		if (!this.arweave) {
@@ -123,7 +123,7 @@ export async function get({ dagOwner, tag = null, arweave = null }) {
 	if (!txs) return null;
 
 	let latest;
-	let latestCID;
+	let latestCID = cid;
 
 	while (!latest && txs.length) {
 		let data: Uint8Array | undefined;
@@ -138,9 +138,9 @@ export async function get({ dagOwner, tag = null, arweave = null }) {
 		const { root, get } = await Transaction.load(data);
 		const rootNode = await get(root);
 
-		if (!tag) return rootNode;
+		if (!tag && !cid) return rootNode; // no search criteria besides the owner, return root
 
-		if (rootNode.hasOwnProperty(tag) && !latestCID) latestCID = rootNode[tag].obj;
+		if (tag && rootNode.hasOwnProperty(tag) && !latestCID) latestCID = rootNode[tag].obj;
 
 		try {
 			latest = await get(latestCID);
