@@ -86,6 +86,8 @@ const someValue = await ardag.get({ dagOwner, cid });
 
 If you specify a `cid` to get, that will take precedence over the `tag` and the `tag` will be ignored.
 
+All the fetching is done from Arweave, if you have the DAG loaded locally, you can simply fetch from the local DAG and skip downloading the data from Arweave.
+
 ## Integrated API
 
 The above API calls are intended for `ipld-car-txs` and `ardag` to be used separately. For convenience, they've also been integrated together in the below API through an "ArDag Instance".
