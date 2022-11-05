@@ -12,7 +12,7 @@ describe('Integrated ardag', () => {
 	let arlocal: ArLocal;
 
 	let tag = 'Mobile';
-	let tag2 = 'Landline';
+	let tag2 = 'A Landline/Phone';
 	let v1 = { number: '555-1234' };
 	let v2 = { number: '212-555-1234' };
 	let v3 = { number: '+1-212-555-1234' };
