@@ -90,7 +90,11 @@ All the fetching is done from Arweave, if you have the DAG loaded locally, you c
 
 ## Integrated API
 
-The above API calls are intended for `ipld-car-txs` and `ardag` to be used separately. For convenience, they've also been integrated together in the below API through an "ArDag Instance".
+The above API calls are intended for `ipld-car-txs` and `ardag` to be used separately for single ArDags. If you're dealing with many different ArDag owners, you will want to keep them separate by creating an instance for each ArDag. ArDag will track each owner's rootCID for you, so you can easily get tag by owner.
+
+If the ArDag owner uses a name service, you can use [NameTag](https://github.com/DougAnderson444/ardag-nametag-loader) to simplify things even further.
+
+For convenience, they've also been integrated together in the below API through an "ArDag Instance".
 
 ### getInstance
 
