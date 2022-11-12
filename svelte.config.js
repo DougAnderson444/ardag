@@ -10,6 +10,13 @@ const config = {
 		postcss: true
 	}),
 
+	package: {
+		exports: (filepath) => {
+			// return true for mathes on index.js
+			return filepath.endsWith('index.js');
+		}
+	},
+
 	kit: {
 		adapter: adapter({
 			pages: 'docs',
